@@ -1,0 +1,27 @@
+{
+  "name": "atomicswaps",
+  "version": "0.0.1",
+  "description": "AtomicSwaps",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3s3s/atomicswaps.git"
+  },
+  "dependencies": {
+    "sodium-native": "latest",
+    "keccak256": "latest",
+    "bs58": "latest",
+    "bip65": "latest",
+    "bitcoinjs-lib": "latest",
+    "jquery": "^3.4.1",
+    "node-fetch": "^2.6.0"
+  },
+  "bugs": {
+    "url": "https://github.com/3s3s/atomicswaps/issues"
+  },
+  "homepage": "https://github.com/3s3s/atomicswaps#readme",
+  "scripts": {
+    "start": "browserify --debug ./source/main.js > ./js/main.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
