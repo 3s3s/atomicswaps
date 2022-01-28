@@ -13,8 +13,21 @@ exports.Init = async function()
     ConnectNewPeers();
 
     setInterval(() => {
-        ClearMemory()
-
+        let alivePeers = [];
+        for (let i=0; i<g_ConnectedPeers.length; i++)
+        {
+            if (g_ConnectedPeers[i].isAlive === false)
+            {
+                console.log("Terminate dead connection: "+g_ConnectedPeers[i]["remote_address"])
+                g_ConnectedPeers[i].terminate();
+                continue;
+            }
+            g_ConnectedPeers[i].isAlive = false;
+            g_ConnectedPeers[i].ping();
+            alivePeers.push(g_ConnectedPeers[i])
+        }
+        g_ConnectedPeers = alivePeers;
+    
         if (g_ConnectedPeers.length < 3)
             ConnectNewPeers();
     }, 30000);    
@@ -32,7 +45,8 @@ async function ConnectNewPeers()
 
     Connect("195.154.113.90:10443")
     Connect("82.118.22.155:10443")
-    Connect("localhost:10443")
+    Connect("144.76.71.116:10443")
+    //Connect("localhost:10443")
 }
 
 function QueryNewPeers()
@@ -131,21 +145,6 @@ function ClearMemory()
             freshPeers[peer] = g_TryConnect[peer];   
     }
     g_TryConnect = freshPeers;
-
-    let alivePeers = [];
-    for (let i=0; i<g_ConnectedPeers.length; i++)
-    {
-        if (g_ConnectedPeers[i].isAlive === false)
-        {
-            g_ConnectedPeers[i].terminate();
-            continue;
-        }
-        g_ConnectedPeers[i].isAlive = false;
-        g_ConnectedPeers[i].ping();
-        alivePeers.push(g_ConnectedPeers[i])
-    }
-    g_ConnectedPeers = alivePeers;
-
 }
 
 exports.GetConnectedPeers = function(ip)
