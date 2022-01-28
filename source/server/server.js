@@ -36,6 +36,7 @@ exports.StartServer = function()
             console.log("terminate connection from localhost")
             return ws.terminate();
         }
+        console.log("Connected remote address: " + req.socket.remoteAddress)
 
         ws.isAlive = true;
         g_constants.WEB_SOCKETS.clients.forEach(wsOld => {

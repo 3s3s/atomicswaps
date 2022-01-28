@@ -35,7 +35,7 @@ exports.Init = async function()
         }
         g_ConnectedPeers = alivePeers;
     
-        if (g_ConnectedPeers.length < 3)
+        if (g_ConnectedPeers.length < g_constants.MAX_CONNECTIONS)
             ConnectNewPeers();
 
         const list = exports.GetConnectedPeers("-");
@@ -47,8 +47,7 @@ async function ConnectNewPeers()
 {
     const peers = await g_constants.dbTables["peers"].Select("*", "time > "+(Date.now()-60*1000), "ORDER BY time DESC LIMIT 20");
 
-    if (peers.length < 3)
-        QueryNewPeers();
+    QueryNewPeers();
 
     for (let i=0; i<peers.length; i++)
         Connect(unescape(peers[i].address))
