@@ -8,6 +8,13 @@ const utils = require("../utils")
 let g_sentUIDS = {};
 let g_ConnectedPeers = [];
 
+exports.IsOwnUID = function(uid)
+{
+    if (g_sentUIDS[uid])
+        return true;
+    return false;
+}
+
 exports.Init = async function()
 {
     ConnectNewPeers();
@@ -43,7 +50,6 @@ async function ConnectNewPeers()
     for (let i=0; i<peers.length; i++)
         Connect(unescape(peers[i].address))
 
-    Connect("195.154.113.90:10443")
     Connect("82.118.22.155:10443")
     Connect("144.76.71.116:10443")
     //Connect("localhost:10443")
@@ -83,7 +89,7 @@ exports.broadcastMessage = function(ip, client)
 
 exports.SavePeers = function(uid, list)
 {
-    if (!g_sentUIDS[uid])
+    if (!exports.IsOwnUID(uid))
         return;
     
     delete g_sentUIDS[uid];
@@ -178,13 +184,18 @@ exports.GetConnectedPeers = function(ip)
     return list;
 }
 
+let g_LastPeers = {peers: [], time: 0}
 exports.GetLastPeers = async function(ip)
 {
+    if (g_LastPeers.time > Date.now() - 60*1000)
+        return g_LastPeers.peers;
+
+    g_LastPeers = {peers: [], time: Date.now()};
+
     const peers = await g_constants.dbTables["peers"].Select("address", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
 
-    let list = [];
     for (let i=0; i<peers.length; i++)
-         list.push(peers[i].address)
+        g_LastPeers.peers.push(peers[i].address)
     
-    return list;
+    return g_LastPeers.peers;
 }

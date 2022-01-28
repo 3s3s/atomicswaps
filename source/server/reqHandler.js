@@ -61,7 +61,7 @@ exports.handleConnection = function(ws)
             return SendError(ws, client.params.uid, 'Error: "request" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
 
         client.params.TTL = client.params.TTL*1 - 1;
-        if (client.params.TTL*1 >= 0)
+        if (client.params.TTL*1 >= 0 && !peers.IsOwnUID(client.params.uid))
             exports.broadcastMessage(ws["remote_address"], client)
 
         SendResponce(ws, client);
@@ -92,7 +92,7 @@ async function SendResponce(ws, client)
 {
     if (client.request == 'getPeers')
     {
-        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 3, list: await peers.GetLastPeers(ws["remote_address"]) } };
+        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 4-client.params.TTL, list: await peers.GetLastPeers(ws["remote_address"]) } };
 
         if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
             return ws.send(JSON.stringify(responce));    
