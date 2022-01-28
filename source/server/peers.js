@@ -177,3 +177,10 @@ exports.GetConnectedPeers = function(ip)
     
     return list;
 }
+
+exports.GetLastPeers = function(ip)
+{
+    const peers = await g_constants.dbTables["peers"].Select("*", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 20");
+     
+    return peers;
+}
