@@ -31,11 +31,11 @@ exports.StartServer = function()
         if (g_constants.WEB_SOCKETS.clients.length > 100)
             return ws.terminate();
 
-        /*if (req.socket.remoteAddress.indexOf("127.0.0.1") > 0)
+        if (req.socket.remoteAddress.indexOf("127.0.0.1") > 0)
         {
             console.log("terminate connection from localhost")
             return ws.terminate();
-        }*/
+        }
 
         ws.isAlive = true;
         g_constants.WEB_SOCKETS.clients.forEach(wsOld => {
