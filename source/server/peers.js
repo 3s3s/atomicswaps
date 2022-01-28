@@ -37,6 +37,9 @@ exports.Init = async function()
     
         if (g_ConnectedPeers.length < 3)
             ConnectNewPeers();
+
+        const list = exports.GetConnectedPeers("-");
+        console.log("Connected peers: "+JSON.stringify(list))
     }, 30000);    
 }
 
@@ -95,7 +98,7 @@ exports.SavePeers = function(uid, list)
     delete g_sentUIDS[uid];
 
     for (let i=0; i<Math.min(10, list.length); i++)
-        Connect(list[i]);
+        Connect(unescape(list[i]));
 
     if (list.length == 1 && reqHandler.IsConnected(list[0]))
         g_constants.dbTables["peers"].Insert(list[0], Date.now(), err => {})
@@ -195,7 +198,7 @@ exports.GetLastPeers = async function(ip)
     const peers = await g_constants.dbTables["peers"].Select("address", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
 
     for (let i=0; i<peers.length; i++)
-        g_LastPeers.peers.push(peers[i].address)
+        g_LastPeers.peers.push(unescape(peers[i].address))
     
     return g_LastPeers.peers;
 }
