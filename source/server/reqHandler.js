@@ -88,11 +88,11 @@ exports.IsConnected = function(peer)
     return ret;
 }
 
-function SendResponce(ws, client)
+async function SendResponce(ws, client)
 {
     if (client.request == 'getPeers')
     {
-        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 3, list: peers.GetLastPeers(ws["remote_address"]) } };
+        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 3, list: await peers.GetLastPeers(ws["remote_address"]) } };
 
         if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
             return ws.send(JSON.stringify(responce));    
