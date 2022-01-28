@@ -98,7 +98,7 @@ function SendResponce(ws, client)
             let address = "";
             for (let i=0; i<parts.length; i++)
             {
-                if (parts[i].length > 5)
+                if (parts[i].length > 5 && parts[i].indexOf(".") > 0)
                 {
                     address = parts[i];
                     break;
@@ -107,7 +107,7 @@ function SendResponce(ws, client)
 
             const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_portSSL] } };
             
-            console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
+            //console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
 
             if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
                 return ws.send(JSON.stringify(responce));    
