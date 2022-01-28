@@ -35,7 +35,7 @@ exports.Init = async function()
 
 async function ConnectNewPeers()
 {
-    const peers = await g_constants.dbTables["peers"].Select("*", "", "ORDER BY time DESC LIMIT 20");
+    const peers = await g_constants.dbTables["peers"].Select("*", "time > "+(Date.now()-60*1000), "ORDER BY time DESC LIMIT 20");
 
     if (peers.length < 3)
         QueryNewPeers();
@@ -180,7 +180,11 @@ exports.GetConnectedPeers = function(ip)
 
 exports.GetLastPeers = async function(ip)
 {
-    const peers = await g_constants.dbTables["peers"].Select("*", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 20");
-     
-    return peers;
+    const peers = await g_constants.dbTables["peers"].Select("address", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
+
+    let list = [];
+    for (let i=0; i<peers.length; i++)
+         list.push(peers[i].address)
+    
+    return list;
 }
