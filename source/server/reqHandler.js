@@ -18,7 +18,6 @@ function SendError(ws, uid, message)
    if (ws.readyState === WebSocket.OPEN) 
    {
        ws.send(JSON.stringify({request: 'error', params: {uid: uid, TTL: 0, message: message} }));
-       ws.terminate();
    }
 }
 
