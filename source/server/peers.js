@@ -46,7 +46,7 @@ async function ConnectNewPeers()
     Connect("195.154.113.90:10443")
     Connect("82.118.22.155:10443")
     Connect("144.76.71.116:10443")
-    //Connect("localhost:10443")
+    Connect("localhost:10443")
 }
 
 function QueryNewPeers()
@@ -55,6 +55,19 @@ function QueryNewPeers()
     g_sentUIDS[uid] = {time: Date.now()};
 
     reqHandler.broadcastMessage("", {request: "getPeers", params: {uid: uid, TTL: 3} })
+
+    ClearMemory()
+}
+
+exports.GetPort = function(ws)
+{
+    const uid = utils.createUID();
+    g_sentUIDS[uid] = {time: Date.now()};
+
+    const responce = {request: "getPort", params: {uid: uid, TTL: 0, address: ws["remote_address"]} };
+
+    if (ws.readyState === WebSocket.OPEN) 
+        return ws.send(JSON.stringify(responce));    
 
     ClearMemory()
 }

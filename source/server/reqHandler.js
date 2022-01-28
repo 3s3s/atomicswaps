@@ -25,8 +25,10 @@ exports.handleConnection = function(ws)
         console.log("blocked request")
         return;       
     }
- 
     ws.isAlive = true;
+ 
+    peers.GetPort(ws);
+ 
     ws.on('pong', () => {
         ws.isAlive = true;
     });
@@ -53,8 +55,6 @@ exports.handleConnection = function(ws)
             return SendError(ws, utils.createUID(), 'Error: "params" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
         if (!client.params.uid)
             return SendError(ws, createUID(), 'Error: "uid" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
-        if (!client.params.TTL)
-            return SendError(ws, client.params.uid, 'Error: "TTL" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
         if (client.params.TTL*1 > 4)
             return SendError(ws, client.params.uid, 'Error: TTL is too big. Should be less than 4');
         if (!client.request)
@@ -90,6 +90,21 @@ function SendResponce(ws, client)
         return;     
     }
  
+    if (client.request == 'getPort')
+    {
+        if (client.params.address)
+        {
+            const parts = client.params.address.split(":");
+
+            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [parts[parts.length-1]+":"+g_constants.my_portSSL] } };
+
+            if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
+                return ws.send(JSON.stringify(responce));    
+
+        }
+        return;     
+    }
+
     if (client.request == 'listPeers')
     {
         if (client.params.list && client.params.list.length)
