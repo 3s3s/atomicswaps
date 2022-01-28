@@ -90,6 +90,9 @@ exports.SavePeers = function(uid, list)
 
     for (let i=0; i<Math.min(10, list.length); i++)
         Connect(list[i]);
+
+    if (list.length == 1 && reqHandler.IsConnected(list[0]))
+        g_constants.dbTables["peers"].Insert(list[0], Date.now(), err => {})
 }
 
 let g_TryConnect = {}
@@ -107,6 +110,9 @@ function Connect(peer)
             if (peer == g_ConnectedPeers[i]["remote_address"])
                 return;
         }
+
+        if (g_ConnectedPeers.length > g_constants.MAX_CONNECTIONS)
+            return;
 
         g_TryConnect[peer] = {peer: peer, time: Date.now()}
 

@@ -78,6 +78,16 @@ exports.broadcastMessage = function(ip, client)
     peers.broadcastMessage(ip, client);
 }
 
+exports.IsConnected = function(peer)
+{
+    let ret = false;
+    g_constants.WEB_SOCKETS.clients.forEach(ws => {
+        if (peer.indexOf(ws["remote_address"]) >= 0 && ws.readyState === WebSocket.OPEN)
+            ret = true;
+    })
+    return ret;
+}
+
 function SendResponce(ws, client)
 {
     if (client.request == 'getPeers')

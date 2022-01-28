@@ -3,6 +3,8 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 exports.DEBUG = true;
 
+exports.MAX_CONNECTIONS = 10;
+
 const SSL_KEY_PATH = __dirname+"/../ssl_cert/privkey.pem";
 const SSL_CERT_PATH = __dirname+"/../ssl_cert/fullchain.pem";
 
