@@ -9,6 +9,8 @@ exports.StartServer = function()
     require("./database").Init();
     require("./peers").Init();
 
+    console.log("This Machine IP address: " + require("ip").address())
+
     const httpsServer = 
         require('https').createServer(g_constants.SSL_options)
         .listen(g_constants.my_portSSL, () => {
@@ -31,7 +33,7 @@ exports.StartServer = function()
         if (g_constants.WEB_SOCKETS.clients.length > 100)
             return ws.terminate();
 
-        if (req.socket.remoteAddress.indexOf("127.0.0.1") > 0)
+        if (req.socket.remoteAddress.indexOf("127.0.0.1") > 0 || req.socket.remoteAddress.indexOf(require("ip").address()) > 0)
         {
             console.log("terminate connection from localhost")
             return ws.terminate();

@@ -10,12 +10,16 @@ const peers = require("./peers")
 Supported commands:
 getPeers - requesting peers from P2P network. Example: {request: "getPeers", params: {uid: "qwert", TTL: 3} } 
 listPeers - returned list of peers. Example: {request: "listPeers", params: {uid: "qwert", TTL: 3, list: [1.1.1.1:10443, 1.2.3.4:10443, ...] } } 
-
+getPort - request a listen port for remote connected client (with known IP address). Example: {request: "getPort", params: {uid: "qwert", TTL: 0, address: 1.2.3.4} } 
 */
 
 function SendError(ws, uid, message)
 {
-   if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({request: 'error', params: {uid: uid, TTL: 0, message: message} }));
+   if (ws.readyState === WebSocket.OPEN) 
+   {
+       ws.send(JSON.stringify({request: 'error', params: {uid: uid, TTL: 0, message: message} }));
+       ws.terminate();
+   }
 }
 
 exports.handleConnection = function(ws)
@@ -42,13 +46,13 @@ exports.handleConnection = function(ws)
     ws.on('message', data => 
     {          
         if (!data || !data.length)
-            return SendError(ws, 'Error: empty message');
+            return SendError(ws, utils.createUID(), 'Error: empty message');
 
         let client = {};
         try {
             client = JSON.parse(data);
         } catch(e) {
-            return SendError(ws, 'Error: '+e.message);    
+            return SendError(ws, utils.createUID(), 'Error: '+e.message);    
         }
         
         if (!client.params)
@@ -90,6 +94,9 @@ exports.IsConnected = function(peer)
 
 async function SendResponce(ws, client)
 {
+    if (client.request == 'error')
+        return;
+
     if (client.request == 'getPeers')
     {
         const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 4-client.params.TTL, list: await peers.GetLastPeers(ws["remote_address"]) } };
@@ -106,7 +113,7 @@ async function SendResponce(ws, client)
         {
             const parts = client.params.address.split(":");
             let address = "";
-            for (let i=0; i<parts.length; i++)
+            for (let i=0; i<Math.min(10, parts.length); i++)
             {
                 if (parts[i].length > 5 && parts[i].indexOf(".") > 0)
                 {
@@ -134,5 +141,5 @@ async function SendResponce(ws, client)
         return;
     }
    
-    SendError(ws, 'Error: invalid request. Now supported only getPeers, listPeers');
+    SendError(ws, utils.createUID(), 'Error: invalid request. Now supported only getPeers, listPeers, getPort');
 }
