@@ -1,6 +1,6 @@
 "use strict";
 
-chrome.webRequest.onBeforeRequest.addListener(
+/*chrome.webRequest.onBeforeRequest.addListener(
   redirect,
   {urls: ["http://tbtc/*"]},
   ["blocking"]
@@ -15,7 +15,7 @@ function redirect(requestDetails) {
   return {
     redirectUrl: ext
   };
-}
+}*/
 
 chrome.browserAction.onClicked.addListener(() => {
     

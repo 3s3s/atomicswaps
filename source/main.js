@@ -3,13 +3,16 @@
 const $ = require('jquery');
 const popup = require("./popup.js")
 const utils = require("./utils.js")
+const server = require("./server/server.js")
+
+//server.StartServer();
 
 let g_LastHash = "";
 document.addEventListener('DOMContentLoaded', async () => {
 
 	if (window.location.href.indexOf("index.html") == -1)
 	{
-	    popup.UpdateSavedData();
+	    //popup.UpdateSavedData();
 	    SetDefaults();
 	}
 	else
@@ -23,22 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function OnSiteChanged(txID)
 {
     $('#loader').show();
-    const obj = await utils.GetObjectFromBlockchain(txID);
+    //const obj = await utils.GetObjectFromBlockchain(txID);
     $('#loader').hide();
-    
-    
-    if (obj.type == 'text')
-    {
-        document.open('text/html');
-        document.write(Buffer.from(obj.base64, 'base64').toString('utf8'));
-        document.close();
-    }
-    else
-    {
-        const img = $('<img src="data:image/jpeg;base64,'+obj.base64+'"/>');
-        $('#image').append(img); 
-    }
-}
+  }
 
 
 // handle input changes
@@ -99,7 +89,7 @@ $('#file_form').submit(e => {
     try {
         OnRPCChange()
         
-        popup.saveFile($('#the-file-input')[0].files[0])
+        //popup.saveFile($('#the-file-input')[0].files[0])
     }
     catch(e) {
         alert(e.message);

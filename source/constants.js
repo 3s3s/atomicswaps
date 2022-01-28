@@ -1,11 +1,30 @@
 'use strict';
 
-exports.tx = {
-  FEE_FOR_BYTE: 60,    //Change
-  EMPTY_TX_SIZE: 166,  //Change
-  MAX_DATA_SIZE: 520,  //Change
-  AMOUNT_FOR_EXTRA: 1, //Change
-  PART_SIZE: 1024,     //Change
-  ONE_OUTPUT_SIZE: 50,  //Change
-  MAX_TRANSACTION_SIZE: 50*1024
-}
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+exports.DEBUG = true;
+
+const SSL_KEY_PATH = __dirname+"/../ssl_cert/privkey.pem";
+const SSL_CERT_PATH = __dirname+"/../ssl_cert/fullchain.pem";
+
+exports.SQLITE_PATH = __dirname+"/server/sqlite.db";
+
+//exports.my_port = 10080;
+exports.my_portSSL = 10443;
+
+exports.SSL_options = {
+    key: require("fs").readFileSync(SSL_KEY_PATH),
+    cert: require("fs").readFileSync(SSL_CERT_PATH)
+};
+
+exports.WEB_SOCKETS = null;
+
+exports.dbTables = [
+    {
+       'name' : 'peers',
+       'cols' : [
+           ['address', 'TEXT UNIQUE PRIMARY KEY'],
+           ['time', 'INTEGER']
+         ]
+    },
+]; 
+
