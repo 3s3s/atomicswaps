@@ -46,7 +46,7 @@ async function ConnectNewPeers()
     Connect("195.154.113.90:10443")
     Connect("82.118.22.155:10443")
     Connect("144.76.71.116:10443")
-    Connect("localhost:10443")
+    //Connect("localhost:10443")
 }
 
 function QueryNewPeers()

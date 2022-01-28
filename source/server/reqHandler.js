@@ -54,7 +54,7 @@ exports.handleConnection = function(ws)
         if (!client.params)
             return SendError(ws, utils.createUID(), 'Error: "params" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
         if (!client.params.uid)
-            return SendError(ws, createUID(), 'Error: "uid" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
+            return SendError(ws, utils.createUID(), 'Error: "uid" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
         if (client.params.TTL*1 > 4)
             return SendError(ws, client.params.uid, 'Error: TTL is too big. Should be less than 4');
         if (!client.request)
@@ -95,8 +95,19 @@ function SendResponce(ws, client)
         if (client.params.address)
         {
             const parts = client.params.address.split(":");
+            let address = "";
+            for (let i=0; i<parts.length; i++)
+            {
+                if (parts[i].length > 5)
+                {
+                    address = parts[i];
+                    break;
+                }
+            }
 
-            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [parts[parts.length-1]+":"+g_constants.my_portSSL] } };
+            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_portSSL] } };
+            
+            console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
 
             if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
                 return ws.send(JSON.stringify(responce));    
