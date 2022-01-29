@@ -5,7 +5,7 @@ exports.DEBUG = true;
 
 exports.MAX_CONNECTIONS = 10;
 
-exports.seeders = ["82.118.22.155:10443", "144.76.71.116:10443"];
+exports.seeders = ["82.118.22.155:10080", "144.76.71.116:10080"];
 
 exports.SQLITE_PATH = __dirname+"/server/sqlite.db";
 
