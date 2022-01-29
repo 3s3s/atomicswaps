@@ -103,9 +103,23 @@ exports.SavePeers = function(uid, list)
         g_constants.dbTables["peers"].Insert(list[0], Date.now(), err => {})
 }
 
+exports.IsConnected = function(peer)
+{
+    for (let i=0; i<g_ConnectedPeers.length; i++)
+    {
+        if (peer == g_ConnectedPeers[i]["remote_address"])
+            return true;
+    }
+    return false;
+}
+
+
 let g_TryConnect = {}
 function Connect(peer)
 {
+    if (utils.IsBockedAddress(peer))
+        return;
+        
     try {
         for (let key in g_TryConnect)
         {
@@ -113,11 +127,8 @@ function Connect(peer)
                 return;
         }
 
-        for (let i=0; i<g_ConnectedPeers.length; i++)
-        {
-            if (peer == g_ConnectedPeers[i]["remote_address"])
-                return;
-        }
+        if (reqHandler.IsConnected(peer))
+            return;
 
         if (g_ConnectedPeers.length > g_constants.MAX_CONNECTIONS)
             return;
@@ -140,8 +151,6 @@ function Connect(peer)
         client.on('open', () => 
         {
             delete g_TryConnect[peer];
-
-            client.ping();
 
             g_ConnectedPeers.push(client);
             reqHandler.handleConnection(client);

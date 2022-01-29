@@ -33,25 +33,17 @@ exports.StartServer = function()
         if (g_constants.WEB_SOCKETS.clients.length > 100)
             return ws.terminate();
 
-        if (req.socket.remoteAddress.indexOf("127.0.0.1") > 0 || req.socket.remoteAddress.indexOf(require("ip").address()) > 0)
-        {
-            console.log("terminate connection from localhost")
-            return ws.terminate();
-        }
-        console.log("Connected remote address: " + req.socket.remoteAddress)
-
         ws.isAlive = true;
         g_constants.WEB_SOCKETS.clients.forEach(wsOld => {
             if (wsOld["remote_address"] == req.socket.remoteAddress)
-            {
                 ws.isAlive = false;
-                return;
-            }
         });
 
         if (!ws.isAlive)
             return ws.terminate();
 
+        console.log("Connected remote address: " + req.socket.remoteAddress)
+        
         ws["remote_address"] = req.socket.remoteAddress;
 
         require('./reqHandler.js').handleConnection(ws);

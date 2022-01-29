@@ -16,15 +16,31 @@ getPort - request a listen port for remote connected client (with known IP addre
 function SendError(ws, uid, message)
 {
    if (ws.readyState === WebSocket.OPEN) 
-   {
-       ws.send(JSON.stringify({request: 'error', params: {uid: uid, TTL: 0, message: message} }));
-   }
+        ws.send(JSON.stringify({request: 'error', params: {uid: uid, TTL: 0, message: message} }));
+}
+
+let g_knownUIDS = {};
+function IsKnownUID(uid)
+{
+    let newest = {}
+    for (let key in g_knownUIDS)
+    {
+        if (g_knownUIDS[key] > Date.now() - 60*1000)
+            newest[key] = g_knownUIDS[key];
+    }
+    g_knownUIDS = newest;
+
+    if (g_knownUIDS[uid])
+        return true;
+
+    g_knownUIDS[uid] = Date.now();    
 }
 
 exports.handleConnection = function(ws)
 {
     if (utils.IsBockedAddress(ws["remote_address"]))
     {
+        ws.isAlive = false;
         console.log("blocked request")
         return;       
     }
@@ -45,23 +61,29 @@ exports.handleConnection = function(ws)
     ws.on('message', data => 
     {          
         if (!data || !data.length)
-            return SendError(ws, utils.createUID(), 'Error: empty message');
+            return;
 
         let client = {};
         try {
             client = JSON.parse(data);
         } catch(e) {
-            return SendError(ws, utils.createUID(), 'Error: '+e.message);    
+            return;    
         }
-        
-        if (!client.params)
-            return SendError(ws, utils.createUID(), 'Error: "params" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
-        if (!client.params.uid)
-            return SendError(ws, utils.createUID(), 'Error: "uid" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //Check request syntax
+        if (!client.request) return;
+        if (client.request == 'error') return;
+        if (!client.params) return;
+        if (!client.params.uid) return;
         if (client.params.TTL*1 > 4)
             return SendError(ws, client.params.uid, 'Error: TTL is too big. Should be less than 4');
-        if (!client.request)
-            return SendError(ws, client.params.uid, 'Error: "request" not found. Syntax should be: {request: "getPeers", params: {uid: "qwert", TTL: 3, ...} }');
+        if (client.params.TTL*1 < 0)
+            return SendError(ws, client.params.uid, 'Error: TTL is too small. Should be more than 0');
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        //Do not responce more than one time for one "uid" if it is not our own.
+        if (IsKnownUID(client.params.uid) && !peers.IsOwnUID(client.params.uid)) return;     
 
         client.params.TTL = client.params.TTL*1 - 1;
         if (client.params.TTL*1 >= 0 && !peers.IsOwnUID(client.params.uid))
@@ -83,22 +105,23 @@ exports.broadcastMessage = function(ip, client)
 
 exports.IsConnected = function(peer)
 {
+    if (peers.IsConnected(peer))
+        return true;
+
     let ret = false;
     g_constants.WEB_SOCKETS.clients.forEach(ws => {
         if (peer.indexOf(ws["remote_address"]) >= 0 && ws.readyState === WebSocket.OPEN)
             ret = true;
     })
+
     return ret;
 }
 
 async function SendResponce(ws, client)
 {
-    if (client.request == 'error')
-        return;
-
     if (client.request == 'getPeers')
     {
-        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 4-client.params.TTL, list: await peers.GetLastPeers(ws["remote_address"]) } };
+        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 3-(client.params.TTL+1), list: await peers.GetLastPeers(ws["remote_address"]) } };
 
         if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
             return ws.send(JSON.stringify(responce));    
