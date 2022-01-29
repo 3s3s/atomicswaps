@@ -166,7 +166,7 @@ async function SendResponce(ws, client)
                 }
             }
 
-            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_port] } };
+            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_portSSL] } };
             
             //console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
 

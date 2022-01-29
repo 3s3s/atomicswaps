@@ -11,13 +11,13 @@ exports.StartServer = function()
 
     console.log("This Machine IP address: " + require("ip").address())
 
-    const httpServer = 
-        require('http').createServer()
-        .listen(g_constants.my_port, () => {
-        console.log("P2P listening on port "+g_constants.my_port);
+    const httpsServer = 
+        require('https').createServer(g_constants.SSL_options)
+        .listen(g_constants.my_portSSL, () => {
+        console.log("SSL Proxy listening on port "+g_constants.my_portSSL);
     });
 
-    g_constants.WEB_SOCKETS = new WebSocketServer({ server: httpServer, clientTracking: true, perMessageDeflate: true });
+    g_constants.WEB_SOCKETS = new WebSocketServer({ server: httpsServer, clientTracking: true, perMessageDeflate: true });
 
     const interval = setInterval(() => {
         g_constants.WEB_SOCKETS.clients.forEach(ws => {
