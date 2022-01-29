@@ -59,7 +59,15 @@ exports.handleConnection = function(ws)
     });
 
     ws.on('message', data => 
-    {          
+    {
+        utils.UpdateSpeed(ws["remote_address"]);
+        
+        if (utils.GetSpeed(ws["remote_address"]) > 10)
+        {
+            console.log("Blocked too big message speed from host: "+ws["remote_address"])
+            return;
+        }
+
         if (!data || !data.length)
             return;
 
