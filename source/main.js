@@ -3,83 +3,31 @@
 const $ = require('jquery');
 const popup = require("./popup.js")
 const utils = require("./utils.js")
-const server = require("./server/server.js")
+const peers = require("./server/peers.js")
 
 //server.StartServer();
 
-let g_LastHash = "";
+//let g_LastHash = "";
 document.addEventListener('DOMContentLoaded', async () => {
 
-	if (window.location.href.indexOf("index.html") == -1)
-	{
-	    //popup.UpdateSavedData();
-	    SetDefaults();
-	}
-	else
-	{
-	    await SetDefaults();
-	    OnSiteChanged(window.location.hash.slice(1)); 
-	}
+    require("./server/database").Init();
+    ConnectP2P();
 
 }, false);
 
-async function OnSiteChanged(txID)
+let g_ConnectionStarted = false;
+function ConnectP2P()
 {
-    $('#loader').show();
-    //const obj = await utils.GetObjectFromBlockchain(txID);
-    $('#loader').hide();
-  }
-
-
-// handle input changes
-$('#rpc_address').change(e => {
-    OnRPCChange();
-})
-$('#rpc_user').change(e => {
-    OnRPCChange();
-})
-$('#rpc_passsword').change(e => {
-    OnRPCChange();
-})
-
-function OnRPCChange()
-{
-    utils.SetSettings({rpc_address: $('#rpc_address').val()});
-    utils.SetSettings({rpc_user: $('#rpc_user').val()});
-    utils.SetSettings({rpc_passsword: $('#rpc_passsword').val()});
-    
-    SetDefaults();
+    g_ConnectionStarted = true;
+    peers.Init(g_ConnectionStarted);
 }
 
-async function SetDefaults()
-{
-    return new Promise(async ok => {
-        const network = utils.getNetwork();
-        
-        const url = await utils.GetSettings('rpc_address') || network.url;
-        const user = await utils.GetSettings('rpc_user') || network.user;
-        const password = await utils.GetSettings('rpc_password') || network.password;
-        
-        utils.updateNetwork(url, user, password);
-        
-        if (window.location.href.indexOf("index.html") == -1)
-        {
-            $('#rpc_address').val(url);
-            $('#rpc_user').val(user);
-            $('#rpc_passsword').val(password);
-            
-            const balance = await utils.getbalance();
-            const address = await utils.getwalletaddress();
-            
-            $('#balance').val(balance && !balance.error ?  balance.result : "0.0");
-            $('#address').val(address);
-        }
-    
-        ok();
-    })
-}
+$("#network-start").on("click", e => {
+    g_ConnectionStarted = !g_ConnectionStarted;
+    peers.Init(g_ConnectionStarted);
+})
 
-$('#file_form').submit(e => {
+/*$('#file_form').submit(e => {
     e.preventDefault();
     
     if (!$('#the-file-input')[0].files.length)
@@ -94,4 +42,4 @@ $('#file_form').submit(e => {
     catch(e) {
         alert(e.message);
     }
-})
+})*/

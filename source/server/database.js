@@ -1,11 +1,13 @@
 'use strict';
 
 const g_constants = require("../constants")
-const sqlite3 = require('sqlite3');
+const sqlite3 = typeof window !== 'undefined' ? {} : require('sqlite3');
 
 let database = {}
 exports.Init = function()
 {
+    if (typeof window !== 'undefined') return;
+
     database = new sqlite3.Database(g_constants.SQLITE_PATH);
     database.configure("busyTimeout", 1);
 

@@ -1,6 +1,6 @@
 'use strict';
 
-const WebSocket = require('ws');
+const WebSocket = require('isomorphic-ws');
 const utils = require("../utils")
 const g_constants = require("../constants")
 const peers = require("./peers")
@@ -40,26 +40,32 @@ exports.handleConnection = function(ws)
 {
     if (utils.IsBockedAddress(ws["remote_address"]))
     {
-        ws.isAlive = false;
+        ws["isAlive"] = false;
         console.log("blocked request")
         return;       
     }
-    ws.isAlive = true;
+    ws["isAlive"] = true;
  
     peers.GetPort(ws);
  
-    ws.on('pong', () => {
-        ws.isAlive = true;
-    });
-    ws.on('error', (err) => {
-        ws.isAlive = false;
-    });
-    ws.on('close', (err) => {
-        ws.isAlive = false;
-    });
-
-    ws.on('message', data => 
+    if (typeof window === 'undefined')
     {
+        ws.on('pong', () => {
+            ws["isAlive"] = true;
+        });
+    }
+
+    ws.onerror = function(err) {
+        ws["isAlive"] = false;
+    };
+    ws.onclose = function (err) {
+        ws["isAlive"] = false;
+    };
+
+    ws.onmessage = function(data)  
+    {
+        ws["isAlive"] = true;
+
         utils.UpdateSpeed(ws["remote_address"]);
         
         if (utils.GetSpeed(ws["remote_address"]) > 10)
@@ -98,23 +104,27 @@ exports.handleConnection = function(ws)
             exports.broadcastMessage(ws["remote_address"], client)
 
         SendResponce(ws, client);
-    });   
+    };   
 }
 
 exports.broadcastMessage = function(ip, client)
 {
+    peers.broadcastMessage(ip, client);
+
+    if (!g_constants.WEB_SOCKETS.clients) return;
+
     g_constants.WEB_SOCKETS.clients.forEach(ws => {
         if (ws.readyState === WebSocket.OPEN && ws["remote_address"] != ip)
             ws.send(JSON.stringify(client));        
     })
-
-    peers.broadcastMessage(ip, client);
 }
 
 exports.IsConnected = function(peer)
 {
     if (peers.IsConnected(peer))
         return true;
+
+    if (!g_constants.WEB_SOCKETS.clients) return false;
 
     let ret = false;
     g_constants.WEB_SOCKETS.clients.forEach(ws => {
@@ -139,6 +149,8 @@ async function SendResponce(ws, client)
  
     if (client.request == 'getPort')
     {
+        if (typeof window !== 'undefined') return;
+
         if (client.params.address)
         {
             const parts = client.params.address.split(":");
@@ -152,7 +164,7 @@ async function SendResponce(ws, client)
                 }
             }
 
-            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_portSSL] } };
+            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_port] } };
             
             //console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
 

@@ -5,20 +5,13 @@ exports.DEBUG = true;
 
 exports.MAX_CONNECTIONS = 10;
 
-const SSL_KEY_PATH = __dirname+"/../ssl_cert/privkey.pem";
-const SSL_CERT_PATH = __dirname+"/../ssl_cert/fullchain.pem";
+exports.seeders = ["82.118.22.155:10443", "144.76.71.116:10443"];
 
 exports.SQLITE_PATH = __dirname+"/server/sqlite.db";
 
-//exports.my_port = 10080;
-exports.my_portSSL = 10443;
+exports.my_port = 10080;
 
-exports.SSL_options = {
-    key: require("fs").readFileSync(SSL_KEY_PATH),
-    cert: require("fs").readFileSync(SSL_CERT_PATH)
-};
-
-exports.WEB_SOCKETS = null;
+exports.WEB_SOCKETS = {};
 
 exports.dbTables = [
     {

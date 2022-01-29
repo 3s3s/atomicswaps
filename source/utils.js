@@ -2,6 +2,7 @@
 
 const g_crypto = require('crypto');
 const Buffer = require('buffer').Buffer;
+const g_constants = require('./constants')
 
 let g_ipMessageSpeed = {}
 exports.UpdateSpeed = function(ip)
@@ -57,3 +58,71 @@ exports.createUID = function()
 {
   return exports.Hash160(Math.random()+Date.now())
 }
+
+exports.GetPeersFromDB = function(WHERE)
+{
+  return new Promise(async ok => {
+    if (typeof window === 'undefined')
+      return ok(await g_constants.dbTables["peers"].Select("*", WHERE, "ORDER BY time DESC LIMIT 20"));
+
+    let peers = exports.storage.getItem("saved_peers");
+    if (!peers) peers = [];
+
+    peers.sort((a, b) => {return b.time - a.time})
+
+    ok(peers);
+  })  
+}
+
+exports.SavePeer = function(peer)
+{
+  if (typeof window === 'undefined')
+    return g_constants.dbTables["peers"].Insert(peer, Date.now(), err => {})
+
+  let peers = exports.GetPeersFromDB();
+  for (let i=0; i<peers.length; i++)
+  {
+    if (peers[i].address == peer)
+    {
+      peers[i].time = Date.now();
+      exports.storage.setItem("saved_peers", peers);
+      return;
+    }
+  }
+
+  peers.push({address: peer, time: Date.now()});
+
+  peers.sort((a, b) => {return b.time - a.time})
+
+  exports.storage.setItem(peers);
+}
+
+exports.storage = {
+  getItem : function(key) {
+      var stor;
+      if (window.content != undefined)
+          stor = window.content.localStorage;
+      else
+          stor = localStorage;
+  
+      var str = stor.getItem(key);
+      if (str == undefined)
+          return null;
+      
+      try {
+          return JSON.parse(str);
+      }
+      catch(e) {
+          return null;
+      }
+  },
+  setItem : function(key, value) {
+      var stor;
+      if (window.content != undefined)
+          stor = window.content.localStorage;
+      else
+          stor = localStorage;
+  
+    stor.setItem(key, JSON.stringify(value));
+  }
+};

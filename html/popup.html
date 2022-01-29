@@ -17,75 +17,50 @@
     <div id="loader" style="display:none;"></div>
     <div class="container">
       <div class="row">
-        <div class="col-md-6">
-          <button class="btn btn-outline-secondary" type="button" data-toggle="collapse" data-target="#multiCollapseExample1" aria-expanded="false" aria-controls="multiCollapseExample1">RPC settings</button>
-          <div class="collapse multi-collapse" id="multiCollapseExample1">
-            <div class="card card-body">
-                <form id="main_form">
-                  <div class="form-group">
-                    <label for="rpc_address">RPC address: </label>
-                    <input class="form-control" id="rpc_address" type="text" >
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="rpc_user">RPC user: </label>
-                    <input class="form-control" id="rpc_user" type="text" >
-                  </div>
-                  
-                  <div class="form-group">
-                    <label for="rpc_passsword">RPC password: </label>
-                    <input class="form-control" id="rpc_passsword" type="password" >
-                  </div>
-                  
-                </form>
+        <div class="col">
+          <ul class="nav nav-tabs">
+            <li class="nav-item">
+              <button class="nav-link active" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab" aria-controls="network" aria-selected="true">Network</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet" type="button" role="tab" aria-controls="wallet" aria-selected="false" aria-disabled="true">Wallet</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab" aria-controls="orderbook" aria-selected="false" aria-disabled="true">Orderbook</button>
+            </li>
+          </ul>        
+          <div class="tab-content" id="myTabContent">
+            <div class="table-wrapper tab-pane fade show active" id="network" role="tabpanel" aria-labelledby="network-tab">
+              <table id="table_peers" class="table table-striped table-sm">
+                <thead>
+                  <tr>
+                    <th scope="col">peer</th>
+                    <th scope="col">state</th>
+                  </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+              </table>
             </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <button class="btn btn-outline-secondary" type="button" data-toggle="collapse" data-target="#multiCollapseExample2" aria-expanded="false" aria-controls="multiCollapseExample2">Wallet info</button>
-          <div class="collapse multi-collapse" id="multiCollapseExample2">
-            <div class="card card-body">
-              <form>
-                <div class="form-group row">
-                  <label for="balance" class="col-md-4 col-form-label">Wallet balance</label>
-                  <div class="col-md-8">
-                    <input type="text" readonly class="form-control-plaintext" id="balance" value="0.0">
-                  </div>
-                </div>
-                <div class="form-group row">
-                  <label for="address" class="col-md-4 col-form-label">Wallet address</label>
-                  <div class="col-md-8">
-                    <input type="text" readonly class="form-control-plaintext" id="address" value="">
-                  </div>
-                </div>
-              </form> 
+            <div class="tab-pane fade" id="wallet" role="tabpanel" aria-labelledby="wallet-tab">
+
             </div>
+            <div class="tab-pane fade" id="orderbook" role="tabpanel" aria-labelledby="orderbook-tab">
+
+            </div>
+
           </div>
         </div>
       </div>
-      <div class="row my-3 border border-secondary">
+      <div class="row">
         <div class="col">
-          <form id="file_form">
-            <div class="form-group">
-              <label for="the-file-input">Select a file for save to blockchain</label>
-              <input class="form-control-file" id="the-file-input" type="file">
-            </div>
-              
-            <input class="form-control" type="submit" value="Send Request">
-          </form>
-        </div>
-      </div>
-      <div class='row'>
-        <div class="col">
-          <span>Saved data</span>
-            <table class="table table-striped border">
-              <tbody id='saved-data-table'>
-              </tbody>
-            </table>
+          <button id="network-start">Start/Stop</button>
         </div>
       </div>
     </div>
     
+       
     <script src="../js/jquery-3.4.1.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/bootstrap.min.js"></script>

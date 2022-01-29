@@ -1,12 +1,14 @@
 'use strict';
 
-const WebSocket = require('ws');
+const WebSocket = require('isomorphic-ws');
 const g_constants = require("../constants")
 const reqHandler = require('./reqHandler.js');
 const utils = require("../utils")
 
 let g_sentUIDS = {};
 let g_ConnectedPeers = [];
+
+let g_ConnectionsInterval = 0;
 
 exports.IsOwnUID = function(uid)
 {
@@ -15,22 +17,27 @@ exports.IsOwnUID = function(uid)
     return false;
 }
 
-exports.Init = async function()
+
+
+exports.Init = async function(start = true)
 {
+    if (!start)
+        return StopConnections();
+
     ConnectNewPeers();
 
-    setInterval(() => {
+    g_ConnectionsInterval = setInterval(() => {
         let alivePeers = [];
         for (let i=0; i<g_ConnectedPeers.length; i++)
         {
-            if (g_ConnectedPeers[i].isAlive === false)
+            if (g_ConnectedPeers[i]["isAlive"] === false)
             {
                 console.log("Terminate dead connection: "+g_ConnectedPeers[i]["remote_address"])
                 g_ConnectedPeers[i].terminate();
                 continue;
             }
-            g_ConnectedPeers[i].isAlive = false;
-            g_ConnectedPeers[i].ping();
+            g_ConnectedPeers[i]["isAlive"] = false;
+            //g_ConnectedPeers[i].ping();
             alivePeers.push(g_ConnectedPeers[i])
         }
         g_ConnectedPeers = alivePeers;
@@ -40,21 +47,30 @@ exports.Init = async function()
 
         const list = exports.GetConnectedPeers("-");
         console.log("Connected peers: "+JSON.stringify(list))
-    }, 30000);    
+    }, 30000);   
+    
+    function StopConnections()
+    {
+        clearInterval(g_ConnectionsInterval);
+
+        g_ConnectionsInterval = 0;
+
+        for (let i=0; i<g_ConnectedPeers.length; i++)
+            g_ConnectedPeers[i].terminate();
+    }
 }
 
 async function ConnectNewPeers()
 {
-    const peers = await g_constants.dbTables["peers"].Select("*", "time > "+(Date.now()-60*1000), "ORDER BY time DESC LIMIT 20");
+    const peers = await utils.GetPeersFromDB("time > "+(Date.now()-60*1000));
 
     QueryNewPeers();
 
     for (let i=0; i<peers.length; i++)
         Connect(unescape(peers[i].address))
 
-    Connect("82.118.22.155:10443")
-    Connect("144.76.71.116:10443")
-    //Connect("localhost:10443")
+    for (let i=0; i<g_constants.seeders.length; i++)
+        Connect(g_constants.seeders[i]);
 }
 
 function QueryNewPeers()
@@ -100,7 +116,7 @@ exports.SavePeers = function(uid, list)
         Connect(unescape(list[i]));
 
     if (list.length == 1 && reqHandler.IsConnected(list[0]))
-        g_constants.dbTables["peers"].Insert(list[0], Date.now(), err => {})
+        utils.SavePeer(list[0]); 
 }
 
 exports.IsConnected = function(peer)
@@ -117,6 +133,9 @@ exports.IsConnected = function(peer)
 let g_TryConnect = {}
 function Connect(peer)
 {
+    if (g_ConnectionsInterval == 0)
+        return;
+
     if (utils.IsBockedAddress(peer))
         return;
         
@@ -135,29 +154,33 @@ function Connect(peer)
 
         g_TryConnect[peer] = {peer: peer, time: Date.now()}
 
-        const protocol = peer.indexOf("://") == -1 ? "wss://" : "";
+        const protocol = peer.indexOf("://") == -1 ? "ws://" : "";
 
         const client = new WebSocket(protocol + peer);
 
         client["remote_address"] = peer;
-        client.isAlive = false;
+        client["isAlive"] = false;
 
-        client.on('error', (err) => 
+        /*if (typeof window === 'undefined')
         {
-            client.isAlive = false;
-            delete g_TryConnect[peer];
-        });
+            client.onerror = 
+        }*/
 
-        client.on('open', () => 
+        client.onerror = function(err) 
+        {
+            client["isAlive"] = false;
+            delete g_TryConnect[peer];
+        };
+
+        client.onopen = function()  
         {
             delete g_TryConnect[peer];
 
             g_ConnectedPeers.push(client);
             reqHandler.handleConnection(client);
 
-            g_constants.dbTables["peers"].Insert(peer, Date.now(), err => {})
-
-        })
+            utils.SavePeer(peer);
+        }
     }
     catch(e) {
         console.log("Connect to " + peer + "catch error: " + e.message)
@@ -203,7 +226,8 @@ exports.GetLastPeers = async function(ip)
 
     g_LastPeers = {peers: [], time: Date.now()};
 
-    const peers = await g_constants.dbTables["peers"].Select("address", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
+    //const peers = await g_constants.dbTables["peers"].Select("*", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
+    const peers = await utils.GetPeersFromDB("address<>'"+escape(ip)+"'");
 
     for (let i=0; i<peers.length; i++)
         g_LastPeers.peers.push(unescape(peers[i].address))

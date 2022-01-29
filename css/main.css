@@ -48,3 +48,9 @@
 #close:hover {
     cursor: pointer;
 }
+
+.table-wrapper {
+  max-height: 100px;
+  overflow: auto;
+  display:inline-block;
+}

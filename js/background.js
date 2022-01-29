@@ -1,28 +1,26 @@
 "use strict";
 
-/*chrome.webRequest.onBeforeRequest.addListener(
-  redirect,
-  {urls: ["http://tbtc/*"]},
-  ["blocking"]
-);
-
-function redirect(requestDetails) {
-  console.log("Redirecting: " + requestDetails.url);
-  
-  const txid = requestDetails.url.split('/')[3];
-  const ext = chrome.runtime.getURL("html/index.html#"+txid);
-  
-  return {
-    redirectUrl: ext
-  };
-}*/
-
+let windowID = -1;
 chrome.browserAction.onClicked.addListener(() => {
-    
-  const createData = {
-    type: "panel",
-    url: "html/popup.html"
-  };
-  const creating = chrome.windows.create(createData); 
+
+  try {
+    const oldWindows = chrome.windows.getAll(null, (info) => {
+      for (let i=0; i<info.length; i++)
+        if (info[i].id == windowID)
+        {
+          chrome.windows.update(info[i].id, {focused: true})
+          return;
+        }
+
+      const createData = {
+            type: "panel",
+            url: "html/popup.html"
+      };
+      chrome.windows.create(createData, (info) => {
+            windowID = info.id;
+        }); 
+      }); 
+  }
+  catch(e) {}
 });
 

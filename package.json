@@ -11,6 +11,7 @@
     "bitcoinjs-lib": "latest",
     "bs58": "latest",
     "ip": "^1.1.5",
+    "isomorphic-ws": "^4.0.1",
     "jquery": "^3.6.0",
     "keccak256": "latest",
     "node-fetch": "^2.6.7",
