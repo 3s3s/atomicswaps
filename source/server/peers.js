@@ -154,7 +154,7 @@ function Connect(peer)
 
         g_TryConnect[peer] = {peer: peer, time: Date.now()}
 
-        const protocol = peer.indexOf("://") == -1 ? "ws://" : "";
+        const protocol = peer.indexOf("://") == -1 ? "wss://" : "";
 
         const client = new WebSocket(protocol + peer);
 
