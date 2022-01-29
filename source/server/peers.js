@@ -166,7 +166,7 @@ function Connect(peer)
             client.onerror = 
         }*/
 
-        client.onerror = function(err) 
+        client.onerror = function() 
         {
             client["isAlive"] = false;
             delete g_TryConnect[peer];

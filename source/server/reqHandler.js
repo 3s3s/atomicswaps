@@ -55,15 +55,17 @@ exports.handleConnection = function(ws)
         });
     }
 
-    ws.onerror = function(err) {
+    ws.onerror = function() {
         ws["isAlive"] = false;
     };
-    ws.onclose = function (err) {
+    ws.onclose = function () {
         ws["isAlive"] = false;
     };
 
-    ws.onmessage = function(data)  
+    ws.onmessage = function(event)  
     {
+        let data = event.data;
+
         ws["isAlive"] = true;
 
         utils.UpdateSpeed(ws["remote_address"]);
