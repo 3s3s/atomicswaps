@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/3s3s/atomicswaps#readme",
   "scripts": {
-    "start": "browserify --debug ./source/main.js > ./js/main.js",
+    "compile": "browserify --debug ./source/main.js > ./browser/js/main.js",
     "server": "node ./source/server/main.js"
   },
   "author": "",

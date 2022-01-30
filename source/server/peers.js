@@ -33,11 +33,10 @@ exports.Init = async function(start = true)
             if (g_ConnectedPeers[i]["isAlive"] === false)
             {
                 console.log("Terminate dead connection: "+g_ConnectedPeers[i]["remote_address"])
-                g_ConnectedPeers[i].terminate();
+                g_ConnectedPeers[i].close();
                 continue;
             }
             g_ConnectedPeers[i]["isAlive"] = false;
-            //g_ConnectedPeers[i].ping();
             alivePeers.push(g_ConnectedPeers[i])
         }
         g_ConnectedPeers = alivePeers;
@@ -56,7 +55,7 @@ exports.Init = async function(start = true)
         g_ConnectionsInterval = 0;
 
         for (let i=0; i<g_ConnectedPeers.length; i++)
-            g_ConnectedPeers[i].terminate();
+            g_ConnectedPeers[i].close();
     }
 }
 

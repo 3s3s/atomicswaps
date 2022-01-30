@@ -74,12 +74,12 @@ exports.GetPeersFromDB = function(WHERE)
   })  
 }
 
-exports.SavePeer = function(peer)
+exports.SavePeer = async function(peer)
 {
   if (typeof window === 'undefined')
     return g_constants.dbTables["peers"].Insert(peer, Date.now(), err => {})
 
-  let peers = exports.GetPeersFromDB();
+  let peers = await exports.GetPeersFromDB();
   for (let i=0; i<peers.length; i++)
   {
     if (peers[i].address == peer)
@@ -94,7 +94,7 @@ exports.SavePeer = function(peer)
 
   peers.sort((a, b) => {return b.time - a.time})
 
-  exports.storage.setItem(peers);
+  exports.storage.setItem("saved_peers", peers);
 }
 
 exports.storage = {
