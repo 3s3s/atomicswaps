@@ -26,7 +26,7 @@ exports.Init = function()
             return new Promise(ok => {
                 SelectAll(cols, name, where, other, (err, rows) => {
                     if (err || !rows) return ok([]);
-                    console.log("select return no error");
+                    //console.log("select return no error");
                     ok(rows);
                 });
             });
@@ -51,7 +51,7 @@ function CreateTable(table)
     
     database.run('CREATE TABLE IF NOT EXISTS ' + table.name + cols, err => {
         if (err)
-            console.log(err.message);
+            console.error(err.message);
     });
 }
 
@@ -70,7 +70,7 @@ function Insert(tableObject, values)
         
         if (values.length-1 != tableObject.cols.length-keys ) 
         {
-            console.log('ERROR: Insert to table "'+tableObject.name+'" failed arguments count: ' + (values.length-1));
+            //console.log('ERROR: Insert to table "'+tableObject.name+'" failed arguments count: ' + (values.length-1));
             
             if (callbackERR)
                 return setTimeout(callbackERR, 1, new Error('ERROR: Insert to table "'+tableObject.name+'" failed arguments count: ' + (values.length-1))); //callbackERR(true);
@@ -85,18 +85,18 @@ function Insert(tableObject, values)
         }
         vals += ')';
         
-        console.log('INSERT INTO ' + tableObject.name + ' VALUES ' + vals);
+        //console.log('INSERT INTO ' + tableObject.name + ' VALUES ' + vals);
         
         database.run('REPLACE INTO ' + tableObject.name + ' VALUES ' + vals, err => {
             if (callbackERR) setTimeout(callbackERR, 1, err); 
             if (err) 
-                console.log('INSERT error: ' + err.message);
-            else
-                console.log('INSERT success');
+                console.error('INSERT error: ' + err.message);
+            //else
+            //    console.log('INSERT success');
         });
     }
     catch(e) {
-        console.log("Insert catch error "+e.message);
+        console.error("Insert catch error "+e.message);
     }
 }
 
@@ -116,9 +116,9 @@ function SelectAll(cols, table, where, other, callback)
             if (err) 
             {
                 try {
-                    console.log("SELECT ERROR: query="+query+" message=" + JSON.stringify(err));
+                    console.error("SELECT ERROR: query="+query+" message=" + JSON.stringify(err));
                 }catch(e) {
-                    console.log(e.message)
+                    console.error(e.message)
                 }
             }
             
@@ -127,7 +127,7 @@ function SelectAll(cols, table, where, other, callback)
         });
     }
     catch (e) {
-        console.log(e.message);
+        console.error(e.message);
         if (callback) setTimeout(callback, 1, e, []); //callback(e);
     }
 }
@@ -140,12 +140,12 @@ function Delete(tableObject, where, callback)
             if (callback) setTimeout(callback, 1, err); //callback(err)
             if (!err) 
                 return;
-            console.log('DELETE error: ' + err.message);
+                console.error('DELETE error: ' + err.message);
         });
     }
     catch(e)
     {
         if (callback) setTimeout(callback, 1, e); //callback(e);
-        console.log("Delete catch error "+e.message);
+        console.error("Delete catch error "+e.message);
     }
 }

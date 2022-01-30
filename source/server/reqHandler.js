@@ -66,18 +66,17 @@ exports.handleConnection = function(ws)
     {
         let data = event.data;
 
+        if (!data || !data.length) return;
+
         ws["isAlive"] = true;
 
         utils.UpdateSpeed(ws["remote_address"]);
         
         if (utils.GetSpeed(ws["remote_address"]) > 10)
         {
-            console.log("Blocked too big message speed from host: "+ws["remote_address"])
+            console.error("Blocked too big message speed from host: "+ws["remote_address"])
             return;
         }
-
-        if (!data || !data.length)
-            return;
 
         let client = {};
         try {
@@ -105,7 +104,13 @@ exports.handleConnection = function(ws)
         if (client.params.TTL*1 >= 0 && !peers.IsOwnUID(client.params.uid))
             exports.broadcastMessage(ws["remote_address"], client)
 
-        SendResponce(ws, client);
+        try {
+            require("./protocol/"+client.request).HandleMessage(ws, client);
+        }
+        catch(e) {
+            console.error(e.message);
+            console.error(e.stack);
+        }
     };   
 }
 
@@ -135,55 +140,4 @@ exports.IsConnected = function(peer)
     })
 
     return ret;
-}
-
-async function SendResponce(ws, client)
-{
-    if (client.request == 'getPeers')
-    {
-        const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 3-(client.params.TTL+1), list: await peers.GetLastPeers(ws["remote_address"]) } };
-
-        if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
-            return ws.send(JSON.stringify(responce));    
-
-        return;     
-    }
- 
-    if (client.request == 'getPort')
-    {
-        if (typeof window !== 'undefined') return;
-
-        if (client.params.address)
-        {
-            const parts = client.params.address.split(":");
-            let address = "";
-            for (let i=0; i<Math.min(10, parts.length); i++)
-            {
-                if (parts[i].length > 5 && parts[i].indexOf(".") > 0)
-                {
-                    address = parts[i];
-                    break;
-                }
-            }
-
-            const responce = {request: "listPeers", params: {uid: client.params.uid, TTL: 0, list: [address+":"+g_constants.my_portSSL] } };
-            
-            //console.log('getPort from '+ws["remote_address"]+"  answer: "+address+":"+g_constants.my_portSSL)
-
-            if (ws.readyState === WebSocket.OPEN && responce.params.list.length > 0) 
-                return ws.send(JSON.stringify(responce));    
-
-        }
-        return;     
-    }
-
-    if (client.request == 'listPeers')
-    {
-        if (client.params.list && client.params.list.length)
-            return peers.SavePeers(client.params.uid, client.params.list);
-
-        return;
-    }
-   
-    SendError(ws, utils.createUID(), 'Error: invalid request. Now supported only getPeers, listPeers, getPort');
 }

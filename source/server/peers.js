@@ -205,8 +205,10 @@ function ClearMemory()
     g_TryConnect = freshPeers;
 }
 
-exports.GetConnectedPeers = function(ip)
+exports.GetConnectedPeers = function(ip = null)
 {
+    if (!ip) ip = require("ip").address();
+
     let list = [];
     for (let i=0; i<g_ConnectedPeers.length; i++)
     {
@@ -218,8 +220,10 @@ exports.GetConnectedPeers = function(ip)
 }
 
 let g_LastPeers = {peers: [], time: 0}
-exports.GetLastPeers = async function(ip)
+exports.GetLastPeers = async function(ip = null)
 {
+    if (!ip) ip = require("ip").address();
+
     if (g_LastPeers.time > Date.now() - 60*1000)
         return g_LastPeers.peers;
 

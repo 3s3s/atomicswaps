@@ -44,18 +44,26 @@ exports.StartServer = function()
         if (g_constants.WEB_SOCKETS.clients.length > 100)
             return ws.terminate();
 
+        let connectedToMe = 0;
         ws["isAlive"] = true;
+
         g_constants.WEB_SOCKETS.clients.forEach(wsOld => {
             if (wsOld["remote_address"] == req.socket.remoteAddress)
                 ws["isAlive"] = false;
+
+            if (wsOld["remote_address"]["isAlive"])
+                connectedToMe++;
         });
 
-        if (!ws["isAlive"])
-            return ws.terminate();
+        if (!ws["isAlive"]) return ws.terminate();
+        
+        if (connectedToMe > g_constants.MAX_CONNECTIONS)
+            ws["connectedToMe"] = connectedToMe;
 
         console.log("Connected remote address: " + req.socket.remoteAddress)
         
         ws["remote_address"] = req.socket.remoteAddress;
+
 
         require('./reqHandler.js').handleConnection(ws);
 
