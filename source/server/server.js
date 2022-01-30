@@ -51,12 +51,12 @@ exports.StartServer = function()
             if (wsOld["remote_address"] == req.socket.remoteAddress)
                 ws["isAlive"] = false;
 
-            if (wsOld["remote_address"]["isAlive"])
+            if (wsOld["isAlive"])
                 connectedToMe++;
         });
 
         if (!ws["isAlive"]) return ws.terminate();
-        
+
         if (connectedToMe > g_constants.MAX_CONNECTIONS)
             ws["connectedToMe"] = connectedToMe;
 
