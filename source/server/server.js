@@ -11,8 +11,8 @@ const rl = readline.createInterface({
   terminal: false
 });
 
-rl.on('line', function(line){
-    console.log(line);
+rl.on('line', line => {
+    require("./terminal").Handle(line);
 })
 
 exports.StartServer = function()
