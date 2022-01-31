@@ -89,10 +89,9 @@ exports.SavePeer = async function(peer, connected = true, need_reverse = true)
       if (addr.length == 2)
       {
         require("dns").reverse(addr[0], (err, hostnames) => {
+          if (err || !hostnames) return;
           for (let i=0; i<hostnames.length; i++)
-          {
-            exports.SavePeer(hostnames[i]+":"+addr[1], true, false)
-          }
+            exports.SavePeer(hostnames[i]+":"+addr[1], false, false)
         })
       }
     }
