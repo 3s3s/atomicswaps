@@ -114,9 +114,9 @@ exports.SavePeer = async function(peer, connected = true, need_reverse = true)
   }
 
   if (typeof window === 'undefined')
-    return g_constants.dbTables["peers"].Insert(peer, g_LastSavedTime, err => {});
+    return g_constants.dbTables["peers"].Insert(peer, connected ? g_LastSavedTime : 0, err => {});
 
-  peers.push({address: peer, time: g_LastSavedTime});
+  peers.push({address: peer, time: connected ? g_LastSavedTime : 0});
 
   peers.sort((a, b) => {return b.time - a.time})
 
