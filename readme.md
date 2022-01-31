@@ -27,6 +27,7 @@ git clone https://github.com/3s3s/atomicswaps.git
 cd atomicswaps
 npm install
 npm install -g forever
+npm install -g browserify
 ```
 
 3. Start P2P server

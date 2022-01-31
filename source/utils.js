@@ -75,12 +75,29 @@ exports.GetPeersFromDB = function(WHERE)
 }
 
 let g_LastSavedTime = 0;
-exports.SavePeer = async function(peer, connected = true)
+exports.SavePeer = async function(peer, connected = true, need_reverse = true)
 {
   if (Date.now() - g_LastSavedTime < 1000)
     return setTimeout(exports.SavePeer, 1000, peer, connected);
 
   g_LastSavedTime = Date.now();
+
+  if (need_reverse)
+  {
+    try {
+      const addr = peer.split(":");
+      if (addr.length == 2)
+      {
+        require("dns").reverse(addr[0], (err, hostnames) => {
+          for (let i=0; i<hostnames.length; i++)
+          {
+            exports.SavePeer(hostnames[i]+":"+addr[1], true, false)
+          }
+        })
+      }
+    }
+    catch(e) {}
+  }
   
   let peers = await exports.GetPeersFromDB();
   for (let i=0; i<peers.length; i++)
