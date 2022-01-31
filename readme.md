@@ -42,3 +42,16 @@ npm run compile
 
 The atomicswaps/browser directory will contain the code for the browser extension. It is compatible with Firefox and Chrome browsers.
 
+Also you can run server as a background process (daemon)
+
+
+```
+npm run daemon
+```
+
+To stop the daemon jus type:
+
+```
+npm run daemon_stop
+```
+

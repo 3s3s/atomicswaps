@@ -18,9 +18,11 @@ exports.IsOwnUID = function(uid)
 }
 
 
-
-exports.Init = async function(start = true)
+let g_P2P_protocol = null;
+exports.Init = async function(start = true, P2P_protocol = null)
 {
+    g_P2P_protocol = P2P_protocol;
+
     if (!start)
         return StopConnections();
 
@@ -57,6 +59,14 @@ exports.Init = async function(start = true)
         for (let i=0; i<g_ConnectedPeers.length; i++)
             g_ConnectedPeers[i].close();
     }
+}
+
+exports.HandleMessage = function(ws, client)
+{
+    if (g_P2P_protocol)
+        return g_P2P_protocol[client.request].HandleMessage(ws, client)
+
+    return require("./protocol/"+client.request).HandleMessage(ws, client)
 }
 
 async function ConnectNewPeers()
@@ -112,7 +122,12 @@ exports.SavePeers = function(uid, list)
     delete g_sentUIDS[uid];
 
     for (let i=0; i<Math.min(10, list.length); i++)
+    {
         Connect(unescape(list[i]));
+
+        if (typeof window !== 'undefined')
+            utils.SavePeer(list[i], false);
+    }
 
     if (list.length == 1 && reqHandler.IsConnected(list[0]))
         utils.SavePeer(list[0]); 
@@ -160,18 +175,20 @@ function Connect(peer)
         client["remote_address"] = peer;
         client["isAlive"] = false;
 
-        /*if (typeof window === 'undefined')
-        {
-            client.onerror = 
-        }*/
-
-        client.onerror = function() 
+        client.onerror = function(ev) 
         {
             client["isAlive"] = false;
             delete g_TryConnect[peer];
         };
+        client.onclose = function(ev) 
+        {
+            client["isAlive"] = false;
+            delete g_TryConnect[peer];
 
-        client.onopen = function()  
+            utils.SavePeer(peer);
+        };
+
+        client.onopen = function(ev)  
         {
             delete g_TryConnect[peer];
 
@@ -229,7 +246,6 @@ exports.GetLastPeers = async function(ip = null)
 
     g_LastPeers = {peers: [], time: Date.now()};
 
-    //const peers = await g_constants.dbTables["peers"].Select("*", "address<>'"+escape(ip)+"'", "ORDER BY time DESC LIMIT 9");
     const peers = await utils.GetPeersFromDB("address<>'"+escape(ip)+"'");
 
     for (let i=0; i<peers.length; i++)

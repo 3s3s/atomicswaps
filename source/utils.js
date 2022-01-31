@@ -74,23 +74,33 @@ exports.GetPeersFromDB = function(WHERE)
   })  
 }
 
-exports.SavePeer = async function(peer)
+let g_LastSavedTime = 0;
+exports.SavePeer = async function(peer, connected = true)
 {
-  if (typeof window === 'undefined')
-    return g_constants.dbTables["peers"].Insert(peer, Date.now(), err => {})
+  if (Date.now() - g_LastSavedTime < 1000)
+    return setTimeout(exports.SavePeer, 1000, peer, connected);
 
+  g_LastSavedTime = Date.now();
+  
   let peers = await exports.GetPeersFromDB();
   for (let i=0; i<peers.length; i++)
   {
     if (peers[i].address == peer)
     {
-      peers[i].time = Date.now();
-      exports.storage.setItem("saved_peers", peers);
-      return;
+      if (connected)
+        peers[i].time = g_LastSavedTime;
+
+      if (typeof window === 'undefined')
+        return g_constants.dbTables["peers"].Insert(peer, peers[i].time, err => {});
+      else
+        return exports.storage.setItem("saved_peers", peers);
     }
   }
 
-  peers.push({address: peer, time: Date.now()});
+  if (typeof window === 'undefined')
+    return g_constants.dbTables["peers"].Insert(peer, g_LastSavedTime, err => {});
+
+  peers.push({address: peer, time: g_LastSavedTime});
 
   peers.sort((a, b) => {return b.time - a.time})
 

@@ -105,7 +105,7 @@ exports.handleConnection = function(ws)
             exports.broadcastMessage(ws["remote_address"], client)
 
         try {
-            require("./protocol/"+client.request).HandleMessage(ws, client);
+            peers.HandleMessage(ws, client);
         }
         catch(e) {
             console.error(e.message);

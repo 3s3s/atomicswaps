@@ -1,6 +1,6 @@
 {
   "name": "atomicswaps",
-  "version": "0.0.1",
+  "version": "0.1",
   "description": "AtomicSwaps",
   "repository": {
     "type": "git",
@@ -25,7 +25,9 @@
   "homepage": "https://github.com/3s3s/atomicswaps#readme",
   "scripts": {
     "compile": "browserify --debug ./source/main.js > ./browser/js/main.js",
-    "server": "node ./source/server/main.js"
+    "server": "node ./source/server/main.js",
+    "daemon": "forever -s start ./source/server/main.js",
+    "daemon_stop": "forever stop ./source/server/main.js"
   },
   "author": "",
   "license": "ISC"
