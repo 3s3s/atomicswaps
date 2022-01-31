@@ -16,9 +16,9 @@ exports.Handle = function(line)
     }
 }
 
-function ShowLastPeers()
+async function ShowLastPeers()
 {
-    const list = peers.GetLastPeers();
+    const list = await peers.GetLastPeers();
     for (let i=0; i<list.length; i++)
         console.log(list[i]);
 }
