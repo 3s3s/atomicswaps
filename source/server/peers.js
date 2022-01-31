@@ -185,7 +185,7 @@ function Connect(peer)
             client["isAlive"] = false;
             delete g_TryConnect[peer];
 
-            utils.SavePeer(peer);
+            utils.SavePeer(peer, false);
         };
 
         client.onopen = function(ev)  
