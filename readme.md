@@ -26,6 +26,7 @@ You can use terminal in Visual Studio Code https://code.visualstudio.com/downloa
 git clone https://github.com/3s3s/atomicswaps.git
 cd atomicswaps
 npm install
+npm install -g forever
 ```
 
 3. Start P2P server

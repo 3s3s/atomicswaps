@@ -4,6 +4,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 exports.DEBUG = true;
 
 exports.MAX_CONNECTIONS = 10;
+exports.MAX_DATA_LENGTH = 1024*10; //10 kb should be enought
 
 exports.seeders = ["82.118.22.155:10443", "trade.multicoins.org:10443"];
 

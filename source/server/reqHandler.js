@@ -66,7 +66,7 @@ exports.handleConnection = function(ws)
     {
         let data = event.data;
 
-        if (!data || !data.length) return;
+        if (!data || !data.length || data.length > g_constants.MAX_DATA_LENGTH) return;
 
         ws["isAlive"] = true;
 
