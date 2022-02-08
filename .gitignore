@@ -1,4 +1,5 @@
 node_modules
+ssl_cert
 package-lock.json
 *.db
 *.zip

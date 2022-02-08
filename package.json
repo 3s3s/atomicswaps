@@ -17,7 +17,7 @@
     "jquery": "^3.6.0",
     "keccak256": "latest",
     "node-fetch": "^2.6.7",
-    "p2plib": "^1.0.2",
+    "p2plib": "latest",
     "sodium-universal": "^3.0.4",
     "sqlite3": "^5.0.2",
     "ws": "^8.4.2"
