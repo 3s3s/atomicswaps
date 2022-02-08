@@ -6,12 +6,17 @@ const bip32 = require('bip32')
 const customP2P = require("../../server/p2p/custom")
 //import ElectrumCli from 'electrum-client';
 
+expports.GetAddressBalance = function(address)
+{
+    return new Promise(ok => {
+        ok(1.0);
+    })
+}
+
 exports.GetBalance = async function(mnemonic, callback)
 {
     const address = exports.GetAddress(mnemonic);
-    //console.log(address)
 
-    //p2p.GetBalance(address, "tbtc", callback);
     customP2P.SendMessage({command: "getbalance", address: address, coin: "tbtc"}, callback);
     //const message = {request: "custom", params: {command: "getbalance", address: address, coin: "tbtc"}}
     //const uid = p2p.broadcastMessage(message);
@@ -40,9 +45,3 @@ exports.GetAddress = function(mnemonic)
 function getAddress(node) {
     return bitcoin.payments.p2pkh({ pubkey: node.publicKey, network: bitcoin.networks.testnet }).address;
 }
-
-/*exports.GetBalance = function(address, coin, callback)
-{
-    const message = {request: "custom", params: {command: "getbalance", address: address, coin: coin}}
-    p2p.broadcastMessage(message)
-}*/
