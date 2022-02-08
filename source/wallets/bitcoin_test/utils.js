@@ -6,7 +6,7 @@ const bip32 = require('bip32')
 const customP2P = require("../../server/p2p/custom")
 //import ElectrumCli from 'electrum-client';
 
-expports.GetAddressBalance = function(address)
+exports.GetAddressBalance = function(address)
 {
     return new Promise(ok => {
         ok(1.0);
