@@ -1,18 +1,28 @@
 'use strict';
 
 const p2p = require("p2plib");
-const WebSocket = require('isomorphic-ws');
 
 let g_Callbacks = {};
 
-exports.HandleMessage = async function(ws, message)
+exports.HandleMessage = async function(message)
 {
-    if (!message.params["command"])
+    if (!message["params"] || !message.params["command"] || !message.params["uid"])
         return;
 
     if (message.params["command"] == "getbalance")
     {
+        //{command: "getbalance", address: address, coin: "tbtc"}
+
+        /*let balance = -1;
+
+        if (message.params["coin"] == "tbtc")
+            balance = require("../../wallets/bitcoin_test/utils").GetAddressBalance(message.params["address"])
+        if (message.params["coin"] == "txmr")
+            balance = require("../../wallets/monero_test/utils").GetAddressBalance(message.params["address"])
+
+        p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"]}});*/
         
+        return FreeMemory();                
     }
     /*const responce = {request: "listPeers", params: {uid: message.params.uid, TTL: 3-(message.params.TTL+1), list: await peers.GetLastPeers(ws["remote_address"]) } };
 
