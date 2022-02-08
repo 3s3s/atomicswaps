@@ -25,9 +25,9 @@ exports.HandleMessage = async function(message)
         return FreeMemory();                
     }
 
-    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid])
+    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] && message.params.value)
     {
-        g_Callbacks[message.params.uid].callback(message.params);
+        g_Callbacks[message.params.uid].callback(message.params.value);
         delete g_Callbacks[message.params.uid];
         return;
     }
