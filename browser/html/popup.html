@@ -14,37 +14,107 @@
   </head>
     
   <body>
-    <div id="loader" style="display:none;"></div>
+  <div id="loader" style="display:none;"></div>
     <div class="container">
       <div class="row">
         <div class="col">
           <ul class="nav nav-tabs">
             <li class="nav-item">
-              <button class="nav-link active" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab" aria-controls="network" aria-selected="true">Network</button>
+              <button class="nav-link active" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet" type="button" role="tab" aria-controls="wallet" aria-selected="true">Wallet</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet" type="button" role="tab" aria-controls="wallet" aria-selected="false" aria-disabled="true">Wallet</button>
+              <button class="nav-link  disabled" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab" aria-controls="orderbook" aria-selected="false" aria-disabled="true">Orderbook</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab" aria-controls="orderbook" aria-selected="false" aria-disabled="true">Orderbook</button>
+              <button class="nav-link" id="network-tab" data-bs-toggle="tab" data-bs-target="#network" type="button" role="tab" aria-controls="network" aria-selected="false">Network</button>
             </li>
           </ul>        
           <div class="tab-content" id="myTabContent">
-            <div class="table-wrapper tab-pane fade show active" id="network" role="tabpanel" aria-labelledby="network-tab">
-              <table id="table_peers" class="table table-bordered table-sm">
-                <thead>
-                  <tr>
-                    <th scope="col">peer</th>
-                    <th scope="col">state</th>
-                  </tr>
-                </thead>
-                <tbody id="table_peers_body">
-
-                </tbody>
-              </table>
+            <div class="tab-pane fade" id="network" role="tabpanel" aria-labelledby="network-tab">
+              <div class="container p-0">
+                <div class="row">
+                  <div class="table-wrapper col">
+                    <table id="table_peers" class="table table-bordered table-sm">
+                      <thead>
+                        <tr>
+                          <th scope="col">peer</th>
+                          <th scope="col">state</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table_peers_body">
+      
+                      </tbody>
+                    </table>      
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <div id="network-status"></div>
+                    <button type="button" class="btn btn-info" id="network-start">Start/Stop</button>
+                  </div>
+                </div>
+              </div>
+       
             </div>
-            <div class="tab-pane fade" id="wallet" role="tabpanel" aria-labelledby="wallet-tab">
+            <div class="tab-pane fade show active" id="wallet" role="tabpanel" aria-labelledby="wallet-tab">
+              <div class="container p-1">
+                <div class="row">
+                  <div class="col">
+                    <div id="alert_container"></div>
+                    <div class="accordion" id="accordionExample">
+                      <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                            Wallet Mnemonic Seed
+                          </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+                          <div class="accordion-body">
+                            <form id="form_wallet_seed">
+                              <div class="mb-3">
+                                <textarea class="form-control" id="wallet_seed"></textarea>
+                              </div>                           
+                              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button id="restore_seed" type="button" class="btn btn-primary me-auto">Restore</button>
+                                <button id="generate_seed" type="button" class="btn btn-primary">Generate</button>
+                                <button id="submit_seed" class="btn btn-primary" type="button">Submit</button>
+                              <div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="table-wrapper col">
+                    <table class="table table-bordered table-sm">
+                      <thead class="table-light">
+                        <tr>
+                          <th scope="col">coin</th>
+                          <th scope="col">balance</th>
+                          <th style="width: 10%" scope="col"></th>
 
+                        </tr>
+                      </thead>
+                      <tbody id="table_wallets_body">
+                        <tr>
+                          <td>Bitcoin (testnet)</td><td id="txt_balance_bitcointest">0.000000</td>
+                          <td>
+                            <div class="gap-2 d-md-flex justify-content-md-end">
+                              <button id="btn_bitcointest_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
+                              <button id="btn_bitcointest_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>Monero</td><td id="txt_balance_monero">0.000000</td><td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="tab-pane fade" id="orderbook" role="tabpanel" aria-labelledby="orderbook-tab">
 
@@ -54,22 +124,61 @@
         </div>
       </div>
       
-      <div class="row">
-        <div id="network-status" class="col">
-          
+    </div>
+
+    <div id="wallet_setpassword_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Set new wallet password</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3">
+                <label for="set_password" class="form-label">Type new password</label>
+                <input id="set_password" type="password" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="set_password_confirm" class="form-label">Confirm the password</label>
+                <input id="set_password_confirm" type="password" class="form-control">
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="new_password" type="button" class="btn btn-primary">OK</button>
+          </div>
         </div>
       </div>
-      <div class="row">
-        <div class="col">
-          <button id="network-start">Start/Stop</button>
-         </div>
+    </div>
+
+    <div id="wallet_oldpassword_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Restore saved wallet</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3">
+                <label for="old_password" class="form-label">Type old password</label>
+                <input id="old_password" type="password" class="form-control">
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="old_password_button" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
       </div>
     </div>
-    
+  
        
     <script src="../js/jquery-3.4.1.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
-    <script src="../js/bootstrap.min.js"></script>
     <script src="../js/main.js"></script>
   </body>
 </html>

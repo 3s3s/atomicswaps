@@ -1,50 +1,7 @@
 'use strict';
 
 const g_crypto = require('crypto');
-const Buffer = require('buffer').Buffer;
-const g_constants = require('./constants')
-
-let g_ipMessageSpeed = {}
-exports.UpdateSpeed = function(ip)
-{
-  if (!g_ipMessageSpeed[ip])
-    g_ipMessageSpeed[ip] = {firstTime: Date.now(), count: 1.0}
-
-  g_ipMessageSpeed[ip].count++;
- 
-  //////////////////////////////////////////////////////////////////
-  //Clear memory from old data
-  let newest = {}
-  for (let key in g_ipMessageSpeed)
-  {
-    if (g_ipMessageSpeed[key].prevTime > Date.now() - 3600*1000)
-      newest[key] = g_ipMessageSpeed[key];
-  }
-  g_ipMessageSpeed = newest;
-  //////////////////////////////////////////////////////////////////
-}
-exports.GetSpeed = function(ip)
-{
-  if (!g_ipMessageSpeed[ip])
-    g_ipMessageSpeed[ip] = {firstTime: Date.now()-2000, count: 1.0}
-
-  //Calculate average speed for messages (messages / sec)
-  const speed = (1000.0*g_ipMessageSpeed[ip].count) / (Math.max(1, Date.now() - g_ipMessageSpeed[ip].firstTime));
-
-  return speed;
-}
-
-exports.IsBockedAddress = function(ip)
-{
-  if (ip.indexOf("127.0.0.1") > 0 || ip.indexOf(require("ip").address()) > 0)
-    return true;
-
-  if (exports.GetSpeed(ip) > 100)
-    return true;
-  
-  return false; 
-}
-
+const sodium = require('sodium-universal')
 
 exports.Hash160 = function(arg)
 {
@@ -54,74 +11,45 @@ exports.Hash160 = function(arg)
   return g_crypto.createHash("ripemd160").update(buffer).digest('hex')
 }
 
-exports.createUID = function()
+exports.Encrypt = function(text, password)
 {
-  return exports.Hash160(Math.random()+Date.now())
-}
-
-exports.GetPeersFromDB = function(WHERE)
-{
-  return new Promise(async ok => {
-    if (typeof window === 'undefined')
-      return ok(await g_constants.dbTables["peers"].Select("*", WHERE, "ORDER BY time DESC LIMIT 20"));
-
-    let peers = exports.storage.getItem("saved_peers");
-    if (!peers) peers = [];
-
-    peers.sort((a, b) => {return b.time - a.time})
-
-    ok(peers);
-  })  
-}
-
-let g_LastSavedTime = 0;
-exports.SavePeer = async function(peer, connected = true, need_reverse = true)
-{
-  if (Date.now() - g_LastSavedTime < 1000)
-    return setTimeout(exports.SavePeer, 1000, peer, connected);
-
-  g_LastSavedTime = Date.now();
-
-  if (need_reverse)
-  {
-    try {
-      const addr = peer.split(":");
-      if (addr.length == 2)
-      {
-        require("dns").reverse(addr[0], (err, hostnames) => {
-          if (err || !hostnames) return;
-          for (let i=0; i<hostnames.length; i++)
-            exports.SavePeer(hostnames[i]+":"+addr[1], false, false)
-        })
-      }
-    }
-    catch(e) {}
-  }
+  if (password.length < 2) throw new Error("too short password");
   
-  let peers = await exports.GetPeersFromDB();
-  for (let i=0; i<peers.length; i++)
-  {
-    if (peers[i].address == peer)
-    {
-      if (connected)
-        peers[i].time = g_LastSavedTime;
+  const nonce = Buffer.alloc(sodium.crypto_secretbox_NONCEBYTES, 0);   
+  const MESSAGE = Buffer.from(text);
+  let key = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES);
 
-      if (typeof window === 'undefined')
-        return g_constants.dbTables["peers"].Insert(peer, peers[i].time, err => {});
-      else
-        return exports.storage.setItem("saved_peers", peers);
-    }
-  }
+  sodium.crypto_generichash(key, Buffer.from(password));
 
-  if (typeof window === 'undefined')
-    return g_constants.dbTables["peers"].Insert(peer, connected ? g_LastSavedTime : 0, err => {});
+  let ciphertext = Buffer.alloc(MESSAGE.length + sodium.crypto_secretbox_MACBYTES);
 
-  peers.push({address: peer, time: connected ? g_LastSavedTime : 0});
+  sodium.crypto_secretbox_easy(ciphertext, MESSAGE, nonce, key);
+  ////////////////////////////////////////////////////////////////////////////
+  /*let message = Buffer.alloc(ciphertext.length - sodium.crypto_secretbox_MACBYTES);
 
-  peers.sort((a, b) => {return b.time - a.time})
+  sodium.crypto_secretbox_open_easy(message, ciphertext, nonce, key);*/
+  ////////////////////////////////////////////////////////////////////////////
 
-  exports.storage.setItem("saved_peers", peers);
+  if (exports.Decrypt(ciphertext.toString('hex'), password) != text) throw new Error("Encrypt error")
+
+  return ciphertext.toString('hex');
 }
+
+exports.Decrypt = function(text, password)
+{
+  const nonce = Buffer.alloc(sodium.crypto_secretbox_NONCEBYTES, 0);  
+  const ciphertext = Buffer.from(text, 'hex');
+  let key = Buffer.alloc(sodium.crypto_secretbox_KEYBYTES); 
+
+  sodium.crypto_generichash(key, Buffer.from(password));
+  
+  let message = Buffer.alloc(ciphertext.length - sodium.crypto_secretbox_MACBYTES);
+
+  sodium.crypto_secretbox_open_easy(message, ciphertext, nonce, key);
+
+  return message.toString();
+}
+
 
 exports.storage = {
   getItem : function(key) {

@@ -7,15 +7,18 @@
     "url": "git+https://github.com/3s3s/atomicswaps.git"
   },
   "dependencies": {
+    "bip32": "^1.0.4",
+    "bip39": "^3.0.4",
     "bip65": "latest",
-    "bitcoinjs-lib": "latest",
-    "bs58": "latest",
+    "bitcoinjs-lib": "^6.0.1",
+    "electrum-client": "0.0.6",
     "ip": "^1.1.5",
     "isomorphic-ws": "^4.0.1",
     "jquery": "^3.6.0",
     "keccak256": "latest",
     "node-fetch": "^2.6.7",
-    "sodium-native": "latest",
+    "p2plib": "^1.0.2",
+    "sodium-universal": "^3.0.4",
     "sqlite3": "^5.0.2",
     "ws": "^8.4.2"
   },
@@ -24,8 +27,8 @@
   },
   "homepage": "https://github.com/3s3s/atomicswaps#readme",
   "scripts": {
-    "compile": "browserify ./source/main.js > ./browser/js/main.js",
-    "compile_debug": "browserify --debug ./source/main.js > ./browser/js/main.js",
+    "compile": "browserify -r bip39 -s bip39 --exclude=./wordlists/japanese.json --exclude=./wordlists/spanish.json --exclude=./wordlists/italian.json --exclude=./wordlists/french.json --exclude=./wordlists/korean.json --exclude=./wordlists/czech.json --exclude=./wordlists/portuguese.json --exclude=./wordlists/chinese_traditional.json --exclude=./wordlists/chinese_simplified.json ./source/browser/main.js > ./browser/js/main.js",
+    "compile_debug": "browserify --debug ./source/browser/main.js > ./browser/js/main.js",
     "server": "node ./source/server/main.js",
     "daemon": "forever -s start ./source/server/main.js",
     "daemon_stop": "forever stop ./source/server/main.js"

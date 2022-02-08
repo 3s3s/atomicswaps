@@ -36,7 +36,7 @@ npm install -g browserify
 npm run server
 ```
 
-Instead of runneing the server, you can compile the code for browser:
+Instead of running the server, you can compile the code for browser:
 
 ```
 npm run compile
