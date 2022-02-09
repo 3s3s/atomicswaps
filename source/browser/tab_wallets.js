@@ -1,21 +1,19 @@
 "use strict";
 
-const bip39 = require("bip39")
+const mn = require('electrum-mnemonic')
 const utils = require("../utils")
 const $ = require('jquery');
 
 let g_modal = null;
 exports.Init = function()
 {
-    bip39.setDefaultWordlist('english')
-    
     g_modal = new bootstrap.Modal(document.getElementById('wallet_oldpassword_dialog'))
     g_modal.show();  
 
     setInterval(ShowBalances, 60*1000);
 }
 
-function AlertFail(text = "Invalid BIP39 mnemonic! Checksum failed.")
+function AlertFail(text = "Invalid mnemonic! Checksum failed.")
 {
     $("#alert_container").empty();
     const alertFailMnemonic = `                    
@@ -42,16 +40,16 @@ function AlertSuccess(text = "The mnemonic seed was encrypted and saved successf
 $("#generate_seed").on("click", e => {
     $("#alert_container").empty();
 
-    const mnemonic = bip39.generateMnemonic();
-    $("#wallet_seed").text(mnemonic)
+    const mnemonic = mn.generateMnemonic({ prefix: mn.PREFIXES.standard });
+    $("#wallet_seed").val(mnemonic)
 })
 
 $("#submit_seed").on("click", e => {
     $("#alert_container").empty();
 
-    const newSeed = $("#wallet_seed").text();
+    const newSeed = $("#wallet_seed").val();
 
-    if (!bip39.validateMnemonic(newSeed))
+    if (!mn.validateMnemonic(newSeed, mn.PREFIXES.standard))
         return AlertFail();
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_setpassword_dialog'))
@@ -60,7 +58,7 @@ $("#submit_seed").on("click", e => {
 })
 
 $("#new_password").on("click", e => {
-    const newSeed = $("#wallet_seed").text();
+    const newSeed = $("#wallet_seed").val();
     const password = $("#set_password_confirm").val();
 
     if (password != $("#set_password").val())
@@ -70,13 +68,11 @@ $("#new_password").on("click", e => {
     g_modal.hide();
 
     const oldSeed = GetSavedSeedFromPassword(password);
-    if (bip39.validateMnemonic(oldSeed))
+    if (mn.validateMnemonic(oldSeed, mn.PREFIXES.standard))
         return AlertFail("Wallet with this password already saved.");
     
     try {
-        const seedHEX = bip39.mnemonicToEntropy(newSeed);
-
-        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password), utils.Encrypt(seedHEX, password));
+        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password), utils.Encrypt(newSeed, password));
 
         if (GetSavedSeedFromPassword(password) != newSeed) throw new Error("Something wrong when trying to save encrypted mnemonic seed")
                 
@@ -101,10 +97,10 @@ $("#old_password_button").on("click", e => {
 
     try {
         const seed = GetSavedSeedFromPassword(password);
-        if (!bip39.validateMnemonic(seed))
+        if (!mn.validateMnemonic(seed, mn.PREFIXES.standard))
             return AlertFail();
 
-        $("#wallet_seed").text(seed);
+        $("#wallet_seed").val(seed);
         AlertSuccess("The wallet was restored successfully");
         ShowBalances();
     }
@@ -118,8 +114,7 @@ function GetSavedSeedFromPassword(password)
     try {
         const encryptedSeed = utils.storage.getItem("bitcoin_seed_"+utils.Hash160(password));
         
-        const seedHEX = utils.Decrypt(encryptedSeed, password);
-        return bip39.entropyToMnemonic(seedHEX)
+        return utils.Decrypt(encryptedSeed, password);
     }
     catch(e) {
         AlertFail(e.message);
@@ -129,10 +124,10 @@ function GetSavedSeedFromPassword(password)
 
 function ShowBalances()
 {
-    const mnemonic = $("#wallet_seed").text();
+    const mnemonic = $("#wallet_seed").val();
 
     require("../wallets/bitcoin_test/utils").GetBalance(mnemonic, balance => {
-        $("#txt_balance_bitcointest").text(balance);
+        $("#txt_balance_bitcointest").text(balance.confirmed || 0);
     })
 
 }  

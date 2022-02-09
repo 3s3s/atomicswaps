@@ -8,19 +8,19 @@
   },
   "dependencies": {
     "bip32": "^1.0.4",
-    "bip39": "^3.0.4",
     "bip65": "latest",
     "bitcoinjs-lib": "^6.0.1",
     "electrum-client": "0.0.6",
+    "electrum-mnemonic": "^2.0.0",
     "ip": "^1.1.5",
     "isomorphic-ws": "^4.0.1",
     "jquery": "^3.6.0",
     "keccak256": "latest",
     "node-fetch": "^2.6.7",
     "p2plib": "latest",
-    "sodium-universal": "^3.0.4",
+    "sodium-universal": "^3.1.0",
     "sqlite3": "^5.0.2",
-    "ws": "^8.4.2"
+    "ws": "^8.5.0"
   },
   "bugs": {
     "url": "https://github.com/3s3s/atomicswaps/issues"

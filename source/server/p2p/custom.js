@@ -16,18 +16,18 @@ exports.HandleMessage = async function(message)
         let balance = 0;
 
         if (message.params["coin"] == "tbtc")
-            balance = await require("../../wallets/bitcoin_test/utils").GetAddressBalance(message.params["address"])
+            balance = await require("../../wallets/bitcoin_test/utils").GetAddressBalance(message.params["hash"])
         if (message.params["coin"] == "txmr")
             balance = await require("../../wallets/monero_test/utils").GetAddressBalance(message.params["address"])
 
-        p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"], command: "answer", value: balance}});
+        p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"], command: "answer", values: balance}});
         
         return FreeMemory();                
     }
 
-    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] && message.params.value)
+    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] && message.params.values)
     {
-        g_Callbacks[message.params.uid].callback(message.params.value);
+        g_Callbacks[message.params.uid].callback(message.params.values);
         delete g_Callbacks[message.params.uid];
         return;
     }

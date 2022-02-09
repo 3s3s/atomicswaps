@@ -10,6 +10,17 @@ exports.Hash160 = function(arg)
   const buffer = str.length % 2 != 0 ? Buffer.from(str) : Buffer.from(str, "hex");
   return g_crypto.createHash("ripemd160").update(buffer).digest('hex')
 }
+exports.Hash256 = function(arg, reverse = false)
+{
+  const str = arg+"";
+  
+  const buffer = str.length % 2 != 0 ? Buffer.from(str) : Buffer.from(str, "hex");
+
+  if (reverse)
+    return g_crypto.createHash("sha256").update(buffer).digest().reverse().toString("hex")
+    
+  return g_crypto.createHash("sha256").update(buffer).digest('hex')
+}
 
 exports.Encrypt = function(text, password)
 {
