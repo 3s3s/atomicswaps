@@ -12,6 +12,8 @@ exports.Init = function()
     g_modal = new bootstrap.Modal(document.getElementById('wallet_oldpassword_dialog'))
     g_modal.show();  
 
+    $("#btn_bitcointest_withdraw").prop('disabled', true);
+
     setInterval(ShowBalances, 60*1000);
 }
 
@@ -119,7 +121,7 @@ $("#btn_bitcointest_deposit").on("click", e => {
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return AlertFail();
 
-    $("#deposit_address").empty().val(tbtc.GetAddress(mnemonic).address);
+    $("#deposit_address").empty().val(tbtc.GetAddress(mnemonic).p2pkh.address);
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
     g_modal.show();  
@@ -151,7 +153,54 @@ $("#withdraw_ok").on("click", async e => {
 
     if (coin == "tbtc")
     {
-        const txid = await tbtc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
+        $("#btn_bitcointest_withdraw").prop('disabled', true);
+        $("#btn_bitcointest_withdraw").text("Processing...");
+
+        const ret = await tbtc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
+
+        ConfirmTransaction("tbtc", ret.amount, ret.address_to, ret.raw);
+
+        $("#btn_bitcointest_withdraw").prop('disabled', false);
+        $("#btn_bitcointest_withdraw").text("Withdraw");
+
+    }
+
+    function ConfirmTransaction(coin, amount, address_to, rawTX)
+    {
+        $("#alert_container").empty();
+        g_modal.hide();
+
+        $("#id_withdraw_tx").text(rawTX);
+        $("#id_withdraw_coin").text(coin);
+        $("#withdraw_address_c").val(address_to);
+        $("#withdraw_address_amount_c").val((amount/100000000).toFixed(8)*1);
+    
+        g_modal = new bootstrap.Modal(document.getElementById('confirm_withdraw_dialog'));
+        g_modal.show();  
+    }
+})
+
+$("#withdraw_confirm").on("click", async e => {
+    $("#alert_container").empty();
+    g_modal.hide();
+
+    const coin = $("#id_withdraw_coin").text();
+    const rawTX = $("#id_withdraw_tx").text();
+
+    if (coin == "tbtc")
+    {
+        $("#btn_bitcointest_withdraw").prop('disabled', true);
+        $("#btn_bitcointest_withdraw").text("Processing...");
+
+        const txid = await tbtc.broadcast(rawTX);
+
+        if (txid.length > 50)
+            AlertSuccess("txid: "+txid)
+        else
+            AlertFail(txid);
+
+        $("#btn_bitcointest_withdraw").prop('disabled', false);
+        $("#btn_bitcointest_withdraw").text("Withdraw");
         return;
     }
 })
@@ -176,6 +225,7 @@ function ShowBalances()
     if (!connected.length)
     {
         $("#txt_balance_bitcointest").empty().append($("<span class='text-danger'>Offline</span>"))
+        $("#btn_bitcointest_withdraw").prop('disabled', true);
 
         if (!g_offline)
         {
@@ -185,6 +235,9 @@ function ShowBalances()
         return;
     }
     g_offline = false;
+
+    if ($("#btn_bitcointest_withdraw").text() == "Withdraw")
+        $("#btn_bitcointest_withdraw").prop('disabled', false);
 
     const mnemonic = $("#wallet_seed").val();
 

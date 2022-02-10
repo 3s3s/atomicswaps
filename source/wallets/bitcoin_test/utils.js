@@ -101,7 +101,28 @@ exports.withdraw = function(mnemonic, address_to, amount)
 
             const ret = txb.build().toHex();
 
-            ok(ret)
+            ok({
+                raw: ret, 
+                amount: (amount*100000000).toFixed(0)*1, 
+                address_to: address_to, 
+                change: change.toFixed(0)*1,
+                change_address: address.p2pkh.address,
+                fee: fee.toFixed(0)*1
+            })
+        })
+    })
+}
+
+exports.broadcast = function(rawTX)
+{
+    return new Promise(ok => {
+            customP2P.SendMessage({
+                command: "electrum", 
+                request: "blockchain.transaction.broadcast", 
+                params: [rawTX], 
+                coin: "tbtc"}, ret => 
+        {    
+            ok(ret);
         })
     })
 }

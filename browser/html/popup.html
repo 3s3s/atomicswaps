@@ -228,6 +228,34 @@
       </div>
     </div>
 
+    <div id="confirm_withdraw_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger">
+            <h5 class="modal-title"><b>Withdraw confirmation</b></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="id_withdraw_tx" style="display:none;"></div>
+            <div id="id_withdraw_coin" style="display:none;"></div>
+            <form>
+              <div class="mb-3">
+                <label for="withdraw_address_c" class="form-label">Address</label>
+                <input id="withdraw_address_c" type="text" class="form-control" readonly>
+              </div>
+              <div class="mb-3">
+                <label for="withdraw_address_amount_c" class="form-label">Amount:</label>
+                <input id="withdraw_address_amount_c" type="text" class="form-control" readonly>
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button id="withdraw_confirm" type="button" class="btn btn-primary">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="../js/jquery-3.4.1.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/main.js"></script>
