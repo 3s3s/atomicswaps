@@ -176,7 +176,58 @@
       </div>
     </div>
   
+    <div id="wallet_depositaddress_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Address for deposit to the wallet</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form>
+              <div class="mb-3 row">
+                <label for="deposit_address" class="col-sm-2 col-form-label">Address:</label>
+                <div class="col-sm-10">
+                  <input type="text" readonly class="form-control-plaintext" id="deposit_address" value="">
+                </div>
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
        
+    <div id="wallet_withdraw_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Withdraw from the wallet</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="id_withdraw_coin" style="display:none;"></div>
+            <form>
+              <div class="mb-3">
+                <label for="withdraw_address" class="form-label">Address</label>
+                <input id="withdraw_address" type="text" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="withdraw_address_amount" class="form-label">Amount:</label>
+                <input id="withdraw_address_amount" type="text" class="form-control">
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="withdraw_ok" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="../js/jquery-3.4.1.min.js"></script>
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/main.js"></script>

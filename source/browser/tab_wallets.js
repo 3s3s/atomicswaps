@@ -1,6 +1,8 @@
 "use strict";
 
 const mn = require('electrum-mnemonic')
+const p2p = require("p2plib");
+const tbtc = require("../wallets/bitcoin_test/utils")
 const utils = require("../utils")
 const $ = require('jquery');
 
@@ -109,6 +111,46 @@ $("#old_password_button").on("click", e => {
     }
 })
 
+$("#btn_bitcointest_deposit").on("click", e => {
+    $("#alert_container").empty();
+
+    const mnemonic = $("#wallet_seed").val();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return AlertFail();
+
+    $("#deposit_address").empty().val(tbtc.GetAddress(mnemonic).address);
+
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
+    g_modal.show();  
+
+})
+$("#btn_bitcointest_withdraw").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#id_withdraw_coin").empty().text("tbtc")
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
+    g_modal.show();  
+
+})
+
+$("#withdraw_ok").on("click", async e => {
+    $("#alert_container").empty();
+
+    const coin = $("#id_withdraw_coin").text()
+
+    const mnemonic = $("#wallet_seed").val();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return AlertFail();
+
+    if (coin == "tbtc")
+    {
+        const txid = await tbtc.withdraw(mnemonic, address_to, amount);
+        return;
+    }
+})
+
 function GetSavedSeedFromPassword(password)
 {
     try {
@@ -122,12 +164,29 @@ function GetSavedSeedFromPassword(password)
     }
 }
 
+let g_offline = false;
 function ShowBalances()
 {
+    const connected = p2p.GetConnectedPeers();
+    if (!connected.length)
+    {
+        $("#txt_balance_bitcointest").empty().append($("<span class='text-danger'>Offline</span>"))
+
+        if (!g_offline)
+        {
+            g_offline = true;
+            return setTimeout(ShowBalances, 5000)
+        }
+        return;
+    }
+    g_offline = false;
+
     const mnemonic = $("#wallet_seed").val();
 
-    require("../wallets/bitcoin_test/utils").GetBalance(mnemonic, balance => {
-        $("#txt_balance_bitcointest").text(balance.confirmed || 0);
+    $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
+
+    tbtc.GetBalance(mnemonic, balance => {
+        $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
     })
 
 }  
