@@ -16,8 +16,9 @@
     "isomorphic-ws": "^4.0.1",
     "jquery": "^3.6.0",
     "keccak256": "latest",
+    "multicoinjs-lib": "^5.0.5",
     "node-fetch": "^2.6.7",
-    "p2plib": "latest",
+    "p2plib": "^1.0.15",
     "sodium-universal": "^3.1.0",
     "sqlite3": "^5.0.2",
     "ws": "^8.5.0"

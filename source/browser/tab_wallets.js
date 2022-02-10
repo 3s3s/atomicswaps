@@ -128,6 +128,9 @@ $("#btn_bitcointest_deposit").on("click", e => {
 $("#btn_bitcointest_withdraw").on("click", e => {
     $("#alert_container").empty();
 
+    $("#withdraw_address").empty();
+    $("#withdraw_address_amount").empty();
+
     $("#id_withdraw_coin").empty().text("tbtc")
     g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
     g_modal.show();  
@@ -136,6 +139,8 @@ $("#btn_bitcointest_withdraw").on("click", e => {
 
 $("#withdraw_ok").on("click", async e => {
     $("#alert_container").empty();
+
+    g_modal.hide();
 
     const coin = $("#id_withdraw_coin").text()
 
@@ -146,7 +151,7 @@ $("#withdraw_ok").on("click", async e => {
 
     if (coin == "tbtc")
     {
-        const txid = await tbtc.withdraw(mnemonic, address_to, amount);
+        const txid = await tbtc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
         return;
     }
 })
