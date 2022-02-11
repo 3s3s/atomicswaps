@@ -10,8 +10,8 @@ const g_constants = require("../../constants")
 
 exports.Electrum = function(params)
 {
-    if (typeof window !== 'undefined')  return;
-    if (params.publicHash && params.publicHash != utils.Hash160(g_constants.SERVER_PRIVATE_KEY)) return;
+    if (typeof window !== 'undefined')  return null;
+    if (params.publicHash && params.publicHash != utils.Hash160(g_constants.SERVER_PRIVATE_KEY, "")) return null;
 
     const request = params.publicHash ? utils.Decrypt(params.request, g_constants.SERVER_PRIVATE_KEY) : params.request;
 
