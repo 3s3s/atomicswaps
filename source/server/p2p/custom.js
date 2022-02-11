@@ -11,12 +11,13 @@ exports.HandleMessage = async function(message)
 
     if (message.params["command"] == "electrum")
     {
-        let answer = 0;
+        let answer = null;
 
         if (message.params["coin"] == "tbtc")
-            answer = await require("../../wallets/bitcoin_test/utils").Electrum(message.params.request, message.params.params)
+            answer = await require("../../wallets/bitcoin_test/utils").Electrum(message.params)
 
-        p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"], command: "answer", values: answer}});
+        if (answer != null)
+            p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"], command: "answer", values: answer}});
         
         return FreeMemory();                
     }

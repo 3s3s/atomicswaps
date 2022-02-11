@@ -6,11 +6,14 @@ const mn = require('electrum-mnemonic')
 const bip32 = require('bip32')
 const customP2P = require("../../server/p2p/custom")
 const utils = require("../../utils")
+const g_constants = require("../../constants")
 
-//"76a914"+command + "88ac"
-exports.Electrum = function(request, params)
+exports.Electrum = function(params)
 {
     if (typeof window !== 'undefined')  return;
+    if (params.publicHash && publicHash != utils.Hash160(g_constants.SERVER_PRIVATE_KEY)) return;
+
+    const request = params.publicHash ? utils.Decrypt(params.request, g_constants.SERVER_PRIVATE_KEY) : params.request;
 
     const ElectrumCli = require('electrum-client')
 
@@ -19,7 +22,8 @@ exports.Electrum = function(request, params)
 
         await ecl.connect()
         try{
-            const ret = await ecl.request(request, params);
+            const reqObject = JSON.parse(request);
+            const ret = await ecl.request(reqObject.request, reqObject.params);
             ok( ret ); // json-rpc(promise)
         }catch(e){
             console.error(e)
@@ -32,12 +36,18 @@ exports.GetBalance = async function(mnemonic, callback = null)
 {
     return new Promise(ok => {
         const p2pkh = exports.GetAddress(mnemonic).p2pkh;
+
+        const request = utils.Encrypt(JSON.stringify({
+                        request: "blockchain.scripthash.get_balance",
+                        params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", true)]
+                    }), g_constants.SERVER_PRIVATE_KEY);
         
         return customP2P.SendMessage({
                                     command: "electrum", 
-                                    request: "blockchain.scripthash.get_balance", 
-                                    params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", true)], 
-                                    coin: "tbtc"}, balance => {
+                                    publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY),
+                                    request: request,
+                                    coin: "tbtc"}, balance => 
+        {
             if (callback) return callback(balance);
             ok(balance)
         });
@@ -51,7 +61,7 @@ exports.GetAddress = function(mnemonic)
 
     let p2pkh = bitcoin.payments.p2pkh({ pubkey: root.derivePath("m/0/0").publicKey, network: bitcoin.networks.testnet });
     
-     return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey};    
+    return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey};    
 }
 
 exports.withdraw = function(mnemonic, address_to, amount)
@@ -65,10 +75,15 @@ exports.withdraw = function(mnemonic, address_to, amount)
         if (!ecPair)
             return ok(-2);
 
+        const request = utils.Encrypt(JSON.stringify({
+            request: "blockchain.scripthash.listunspent", 
+            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", true)]
+        }), g_constants.SERVER_PRIVATE_KEY);
+
         customP2P.SendMessage({
                 command: "electrum", 
-                request: "blockchain.scripthash.listunspent", 
-                params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", true)], 
+                publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY),
+                request: request,
                 coin: "tbtc"}, list => 
         {    
             const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
@@ -115,11 +130,15 @@ exports.withdraw = function(mnemonic, address_to, amount)
 
 exports.broadcast = function(rawTX)
 {
+    const request = JSON.stringify({
+        request: "blockchain.transaction.broadcast", 
+        params: [rawTX]
+    });
+
     return new Promise(ok => {
             customP2P.SendMessage({
                 command: "electrum", 
-                request: "blockchain.transaction.broadcast", 
-                params: [rawTX], 
+                request: request,
                 coin: "tbtc"}, ret => 
         {    
             ok(ret);
