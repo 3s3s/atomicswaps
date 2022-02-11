@@ -10,6 +10,7 @@
     "bip32": "^1.0.4",
     "bip65": "latest",
     "bitcoinjs-lib": "^6.0.1",
+    "diffie-hellman": "^5.0.3",
     "electrum-client": "0.0.6",
     "electrum-mnemonic": "^2.0.0",
     "ip": "^1.1.5",
@@ -18,7 +19,7 @@
     "keccak256": "latest",
     "multicoinjs-lib": "^5.0.5",
     "node-fetch": "^2.6.7",
-    "p2plib": "^1.0.15",
+    "p2plib": "^1.0.17",
     "sodium-universal": "^3.1.0",
     "sqlite3": "^5.0.2",
     "ws": "^8.5.0"
@@ -28,8 +29,8 @@
   },
   "homepage": "https://github.com/3s3s/atomicswaps#readme",
   "scripts": {
-    "compile": "browserify ./source/browser/main.js > ./browser/js/main.js",
-    "compile_debug": "browserify --debug ./source/browser/main.js > ./browser/js/main.js",
+    "compile": "browserify -u ./source/private.js ./source/browser/main.js > ./browser/js/main.js",
+    "compile_debug": "browserify -u ./source/private.js --debug ./source/browser/main.js > ./browser/js/main.js",
     "server": "node ./source/server/main.js",
     "daemon": "forever -s start ./source/server/main.js",
     "daemon_stop": "forever stop ./source/server/main.js"

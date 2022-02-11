@@ -2,6 +2,8 @@
 
 const g_crypto = require('crypto');
 const sodium = require('sodium-universal')
+const dh = require('diffie-hellman/browser')
+const g_constants = require("./constants")
 
 exports.Hash160 = function(arg, encode = "hex")
 {
@@ -62,6 +64,76 @@ exports.Decrypt = function(text, password)
   return message.toString();
 }
 
+exports.ClientDH_Encrypt = function(message)
+{
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  
+  diffiehellman.setPrivateKey(g_constants.clientDHkeys.sec, "hex")
+  diffiehellman.setPublicKey(g_constants.clientDHkeys.pub, "hex")
+  
+  const password = diffiehellman.computeSecret(Buffer.from(g_constants.clientDHkeys.server_pub, "hex")).toString("hex");
+
+  return exports.Encrypt(message, password);  
+}
+
+exports.ClientDH_Decrypt = function(message)
+{
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  
+  diffiehellman.setPrivateKey(g_constants.clientDHkeys.sec, "hex")
+  diffiehellman.setPublicKey(g_constants.clientDHkeys.pub, "hex")
+  
+  const password = diffiehellman.computeSecret(Buffer.from(g_constants.clientDHkeys.server_pub, "hex")).toString("hex");
+
+  return exports.Decrypt(message, password);  
+}
+
+exports.ServerDH_Encrypt = function(message)
+{
+  if (typeof window !== 'undefined') return;
+
+  const serverDHkeys = require("./private").serverDHkeys;
+
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  
+  diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
+  diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
+  
+  const password = diffiehellman.computeSecret(Buffer.from(serverDHkeys.client_pub, "hex")).toString("hex");
+
+  return exports.Encrypt(message, password);  
+}
+
+exports.ServerDH_Decrypt = function(message)
+{
+  if (typeof window !== 'undefined') return;
+
+  const serverDHkeys = require("./private").serverDHkeys;
+
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  
+  diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
+  diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
+  
+  const password = diffiehellman.computeSecret(Buffer.from(serverDHkeys.client_pub, "hex")).toString("hex");
+
+  return exports.Decrypt(message, password);  
+}
+
+exports.GenerateDH_keys = function(seed)
+{
+  const diffiehellman1 = crypto.createDiffieHellman(utils.Hash160(seed, ""), "hex", Buffer.from("02", "hex"));
+  const diffiehellman2 = crypto.createDiffieHellman(utils.Hash160(seed, ""), "hex", Buffer.from("02", "hex"))
+    
+  // Generating keys
+  diffiehellman1.generateKeys("hex");
+  diffiehellman2.generateKeys("hex");
+
+  const keys1 = {pub: diffiehellmangrp1.getPublicKey("hex"), priv: diffiehellmangrp1.getPrivateKey("hex")}
+  const keys2 = {pub: diffiehellmangrp2.getPublicKey("hex"), priv: diffiehellmangrp2.getPrivateKey("hex"), prime: diffiehellmangrp1.getPrime("hex"), gen: diffiehellmangrp1.getGenerator("hex")}
+
+  return {keys1: keys1, keys2: keys2}
+}
 
 exports.storage = {
   getItem : function(key) {

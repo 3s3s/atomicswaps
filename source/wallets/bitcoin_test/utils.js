@@ -11,9 +11,11 @@ const g_constants = require("../../constants")
 exports.Electrum = function(params)
 {
     if (typeof window !== 'undefined')  return null;
-    if (params.publicHash && params.publicHash != utils.Hash160(g_constants.SERVER_PRIVATE_KEY, "")) return null;
 
-    const request = params.publicHash ? utils.Decrypt(params.request, g_constants.SERVER_PRIVATE_KEY) : params.request;
+    const dhKey = require("../../private").serverDHkeys;
+
+    if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
+    if (params.serverKey && params.serverKey != dhKey.pub) return null;
 
     const ElectrumCli = require('electrum-client')
 
@@ -22,9 +24,14 @@ exports.Electrum = function(params)
 
         await ecl.connect()
         try{
+            const request = params.publicKey && params.serverKey ? utils.ServerDH_Decrypt(params.request) : params.request;
             const reqObject = JSON.parse(request);
             const ret = await ecl.request(reqObject.request, reqObject.params);
-            ok( ret ); // json-rpc(promise)
+
+            if (params.publicKey && params.serverKey)
+                ok( utils.ServerDH_Encrypt(JSON.stringify(ret)) );
+            else
+                ok( JSON.stringify(ret) ); 
         }catch(e){
             console.error(e)
         }
@@ -37,19 +44,25 @@ exports.GetBalance = async function(mnemonic, callback = null)
     return new Promise(ok => {
         const p2pkh = exports.GetAddress(mnemonic).p2pkh;
 
-        const request = utils.Encrypt(JSON.stringify({
+        const request = utils.ClientDH_Encrypt(JSON.stringify({
                         request: "blockchain.scripthash.get_balance",
-                        params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", "hex", true)]
-                    }), g_constants.SERVER_PRIVATE_KEY);
+                        params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", "hex", true)]}));
         
         return customP2P.SendMessage({
                                     command: "electrum", 
-                                    publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY, ""),
+                                    publicKey: g_constants.clientDHkeys.pub,
+                                    serverKey: g_constants.clientDHkeys.server_pub, 
                                     request: request,
                                     coin: "tbtc"}, balance => 
         {
-            if (callback) return callback(balance);
-            ok(balance)
+            try {
+                const ret = JSON.parse(balance)
+                if (callback) return callback(ret);
+                ok(ret)
+            }
+            catch(e) {
+                console.log(e)
+            }
         });
     })
 }
@@ -75,55 +88,63 @@ exports.withdraw = function(mnemonic, address_to, amount)
         if (!ecPair)
             return ok(-2);
 
-        const request = utils.Encrypt(JSON.stringify({
+        const request = utils.ClientDH_Encrypt(JSON.stringify({
             request: "blockchain.scripthash.listunspent", 
-            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", "hex", true)]
-        }), g_constants.SERVER_PRIVATE_KEY);
+            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", "hex", true)]}));
 
         customP2P.SendMessage({
                 command: "electrum", 
-                publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY, ""),
+                publicKey: g_constants.clientDHkeys.pub,
+                serverKey: g_constants.clientDHkeys.server_pub,
                 request: request,
-                coin: "tbtc"}, list => 
+                coin: "tbtc"}, listStr => 
         {    
-            const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
-            txb.setVersion(1)
-            
-            let sum = 0;
-            let needToSign = 0;
-            for (let i=0; i<list.length; i++)
-            {
-                txb.addInput(Buffer.from(list[i].tx_hash, "hex").reverse(), list[i].tx_pos);
-                sum += list[i].value;
+            try {
+                const list = JSON.parse(listStr)
+                const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
+                txb.setVersion(1)
+                
+                let sum = 0;
+                let needToSign = 0;
+                for (let i=0; i<list.length; i++)
+                {
+                    txb.addInput(Buffer.from(list[i].tx_hash, "hex").reverse(), list[i].tx_pos);
+                    sum += list[i].value;
 
-                needToSign++;
+                    needToSign++;
 
-                if (sum > amount*100000000)
-                    break;
+                    if (sum > amount*100000000)
+                        break;
+                }
+                
+                const change = sum - amount*100000000 - fee;
+
+                if (change < 0)
+                    return ok(-1);
+
+                txb.addOutput(address_to, (amount*100000000).toFixed(0)*1);
+                txb.addOutput(address.p2pkh.address, change.toFixed(0)*1);
+
+                for (let i=0; i<needToSign; i++)
+                    txb.sign(i, ecPair)
+
+
+                const ret = txb.build().toHex();
+
+                ok({
+                    raw: ret, 
+                    amount: (amount*100000000).toFixed(0)*1, 
+                    address_to: address_to, 
+                    change: change.toFixed(0)*1,
+                    change_address: address.p2pkh.address,
+                    fee: fee.toFixed(0)*1
+                })
+                
             }
-            
-            const change = sum - amount*100000000 - fee;
-
-            if (change < 0)
-                return ok(-1);
-
-            txb.addOutput(address_to, (amount*100000000).toFixed(0)*1);
-            txb.addOutput(address.p2pkh.address, change.toFixed(0)*1);
-
-            for (let i=0; i<needToSign; i++)
-                txb.sign(i, ecPair)
-
-
-            const ret = txb.build().toHex();
-
-            ok({
-                raw: ret, 
-                amount: (amount*100000000).toFixed(0)*1, 
-                address_to: address_to, 
-                change: change.toFixed(0)*1,
-                change_address: address.p2pkh.address,
-                fee: fee.toFixed(0)*1
-            })
+            catch(e)
+            {
+                console.log(e)
+            }
         })
     })
 }
@@ -140,7 +161,7 @@ exports.broadcast = function(rawTX)
                 command: "electrum", 
                 request: request,
                 coin: "tbtc"}, ret => 
-        {    
+        {  
             ok(ret);
         })
     })

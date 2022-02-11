@@ -5,7 +5,9 @@ exports.SSL_options = typeof window === 'undefined' ? {
     cert: require("fs").readFileSync(__dirname+"/server/ssl_cert/fullchain.pem")    
 } : {}
 
-let PRIVATE = false;
-try {PRIVATE = require("./private");}catch(e) {}
-
-exports.SERVER_PRIVATE_KEY = PRIVATE ? PRIVATE.SERVER_PRIVATE_KEY || "fljaksgyr7r3894F#E$#@$":"fljaksgyr7r3894F#E$#@$";
+exports.clientDHkeys = {
+    pub: '16895966b80e97b23ee286076e1029bea10628ff', 
+    sec: '478b23f2685c4e3693752614a90b51cdd98e2354',
+    server_pub: '9c3bb3b99924a6207a1c5495e474da487226eb1d',
+    G: "a;ljg@$BFB"
+}

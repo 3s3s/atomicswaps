@@ -17,14 +17,25 @@ exports.HandleMessage = async function(message)
             answer = await require("../../wallets/bitcoin_test/utils").Electrum(message.params)
 
         if (answer != null)
-            p2p.broadcastMessage({request: "custom", params: {uid: message.params["uid"], command: "answer", values: answer}});
+            p2p.broadcastMessage({
+                request: "custom", 
+                params: {
+                    uid: message.params["uid"], 
+                    command: "answer", 
+                    serverKey: message.params.serverKey || false, 
+                    values: answer
+                }
+            });
         
         return FreeMemory();                
     }
 
-    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] && message.params.values)
+    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] !== undefined && message.params.values)
     {
-        g_Callbacks[message.params.uid].callback(message.params.values);
+        const values = message.params.serverKey && message.params.serverKey == require("../../constants").clientDHkeys.server_pub ? 
+            require("../../utils").ClientDH_Decrypt(message.params.values) : message.params.values;
+
+        g_Callbacks[message.params.uid].callback(values);
         delete g_Callbacks[message.params.uid];
         return;
     }
