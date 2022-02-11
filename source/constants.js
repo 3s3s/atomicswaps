@@ -5,5 +5,7 @@ exports.SSL_options = {
     cert: require("fs").readFileSync(__dirname+"/server/ssl_cert/fullchain.pem")    
 }
 
-const PRIVATE = require("./private");
+let PRIVATE = false;
+try {PRIVATE = require("./private");}catch(e) {}
+
 exports.SERVER_PRIVATE_KEY = PRIVATE ? PRIVATE.SERVER_PRIVATE_KEY || "fljaksgyr7r3894F#E$#@$":"fljaksgyr7r3894F#E$#@$";
