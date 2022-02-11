@@ -1,9 +1,9 @@
 'use strict';
 
-exports.SSL_options = {
+exports.SSL_options = typeof window === 'undefined' ? {
     key: require("fs").readFileSync(__dirname+"/server/ssl_cert/privkey.pem"),
     cert: require("fs").readFileSync(__dirname+"/server/ssl_cert/fullchain.pem")    
-}
+} : {}
 
 let PRIVATE = false;
 try {PRIVATE = require("./private");}catch(e) {}
