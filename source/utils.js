@@ -3,18 +3,19 @@
 const g_crypto = require('crypto');
 const sodium = require('sodium-universal')
 
-exports.Hash160 = function(arg)
+exports.Hash160 = function(arg, encode = "hex")
 {
   const str = arg+"";
   
-  const buffer = str.length % 2 != 0 ? Buffer.from(str) : Buffer.from(str, "hex");
+  const buffer = encode == "hex" ? Buffer.from(str, "hex") : Buffer.from(str);
+
   return g_crypto.createHash("ripemd160").update(buffer).digest('hex')
 }
-exports.Hash256 = function(arg, reverse = false)
+exports.Hash256 = function(arg, encode = "hex", reverse = false)
 {
   const str = arg+"";
   
-  const buffer = str.length % 2 != 0 ? Buffer.from(str) : Buffer.from(str, "hex");
+  const buffer = encode == "hex" ? Buffer.from(str, "hex") : Buffer.from(str);
 
   if (reverse)
     return g_crypto.createHash("sha256").update(buffer).digest().reverse().toString("hex")

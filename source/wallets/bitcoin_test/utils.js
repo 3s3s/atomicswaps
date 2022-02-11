@@ -39,12 +39,12 @@ exports.GetBalance = async function(mnemonic, callback = null)
 
         const request = utils.Encrypt(JSON.stringify({
                         request: "blockchain.scripthash.get_balance",
-                        params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", true)]
+                        params: [utils.Hash256("76a914"+p2pkh.hash.toString("hex") + "88ac", "hex", true)]
                     }), g_constants.SERVER_PRIVATE_KEY);
         
         return customP2P.SendMessage({
                                     command: "electrum", 
-                                    publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY),
+                                    publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY, ""),
                                     request: request,
                                     coin: "tbtc"}, balance => 
         {
@@ -77,12 +77,12 @@ exports.withdraw = function(mnemonic, address_to, amount)
 
         const request = utils.Encrypt(JSON.stringify({
             request: "blockchain.scripthash.listunspent", 
-            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", true)]
+            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", "hex", true)]
         }), g_constants.SERVER_PRIVATE_KEY);
 
         customP2P.SendMessage({
                 command: "electrum", 
-                publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY),
+                publicHash: utils.Hash160(g_constants.SERVER_PRIVATE_KEY, ""),
                 request: request,
                 coin: "tbtc"}, list => 
         {    

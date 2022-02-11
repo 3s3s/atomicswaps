@@ -76,7 +76,7 @@ $("#new_password").on("click", e => {
         return AlertFail("Wallet with this password already saved.");
     
     try {
-        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password), utils.Encrypt(newSeed, password));
+        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password, ""), utils.Encrypt(newSeed, password));
 
         if (GetSavedSeedFromPassword(password) != newSeed) throw new Error("Something wrong when trying to save encrypted mnemonic seed")
                 
@@ -208,7 +208,7 @@ $("#withdraw_confirm").on("click", async e => {
 function GetSavedSeedFromPassword(password)
 {
     try {
-        const encryptedSeed = utils.storage.getItem("bitcoin_seed_"+utils.Hash160(password));
+        const encryptedSeed = utils.storage.getItem("bitcoin_seed_"+utils.Hash160(password, ""));
         
         return utils.Decrypt(encryptedSeed, password);
     }
