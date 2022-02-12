@@ -12,7 +12,15 @@ exports.Electrum = function(params)
 {
     if (typeof window !== 'undefined')  return null;
 
-    const dhKey = require("../../private").serverDHkeys;
+    let dhKey = null;
+    try{
+        dhKey = require("../../private").serverDHkeys;
+    }
+    catch(e) {
+    }
+
+    if (!dhKey && (params.publicKey || params.serverKey))
+        return null;
 
     if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
     if (params.serverKey && params.serverKey != dhKey.pub) return null;
