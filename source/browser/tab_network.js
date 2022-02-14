@@ -3,6 +3,7 @@
 const $ = require('jquery');
 const p2p = require("p2plib"); 
 const customP2P = require("../server/p2p/custom");
+const tab_wallet = require("./tab_wallets")
 
 const P2P_PROTOCOL = {
     custom: customP2P,
@@ -49,7 +50,10 @@ async function UpdatePeers()
         if (!connected.length)
             $("#network-status").append($("<span class='text-warning'>Connecting...</span>"))
         else
+        {
             $("#network-status").append($("<span class='text-success'>Online</span>"))
+            tab_wallet.ShowBalances();
+        }
     }
 
     const FUTURE = Date.now()+1000;

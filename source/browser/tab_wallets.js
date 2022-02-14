@@ -14,7 +14,7 @@ exports.Init = function()
 
     $("#btn_bitcointest_withdraw").prop('disabled', true);
 
-    setInterval(ShowBalances, 60*1000);
+    setInterval(exports.ShowBalances, 60*1000);
 }
 
 function AlertFail(text = "Invalid mnemonic! Checksum failed.")
@@ -81,7 +81,7 @@ $("#new_password").on("click", e => {
         if (GetSavedSeedFromPassword(password) != newSeed) throw new Error("Something wrong when trying to save encrypted mnemonic seed")
                 
         AlertSuccess();
-        ShowBalances();
+        exports.ShowBalances();
     }
     catch(e) {
         return AlertFail(e.message);
@@ -106,7 +106,7 @@ $("#old_password_button").on("click", e => {
 
         $("#wallet_seed").val(seed);
         AlertSuccess("The wallet was restored successfully");
-        ShowBalances();
+        exports.ShowBalances();
     }
     catch(e) {
         return AlertFail(e.message);
@@ -219,7 +219,7 @@ function GetSavedSeedFromPassword(password)
 }
 
 let g_offline = false;
-function ShowBalances()
+exports.ShowBalances = function()
 {
     const connected = p2p.GetConnectedPeers();
     if (!connected.length)
