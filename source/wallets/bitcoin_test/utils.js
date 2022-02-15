@@ -85,12 +85,83 @@ exports.GetAddress = function(mnemonic)
     return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey};    
 }
 
+function listunspent(mnemonic)
+{
+    return new Promise(ok => {
+        const address = exports.GetAddress(mnemonic);
+        const ecPair = multicoin.ECPair.fromPrivateKey(address.privateKey, { network: bitcoin.networks.testnet })
+
+        if (!ecPair)
+            return ok(null);
+            
+        const request = utils.ClientDH_Encrypt(JSON.stringify({
+            request: "blockchain.scripthash.listunspent", 
+            params: [utils.Hash256("76a914"+address.p2pkh.hash.toString("hex") + "88ac", "hex", true)]}));
+    
+        customP2P.SendMessage({
+            command: "electrum", 
+            publicKey: g_constants.clientDHkeys.pub,
+            serverKey: g_constants.clientDHkeys.server_pub,
+            request: request,
+            coin: "tbtc"}, listStr => {
+                try {
+                    ok( JSON.parse(listStr) );
+                }
+                catch(e) {console.log(e); ok(null);}
+            })
+    })
+}
+
 exports.withdraw = function(mnemonic, address_to, amount)
 {
     const fee = 0.00001*100000000;
     
     return new Promise(async ok => {
-        const address = exports.GetAddress(mnemonic);
+        const list = await listunspent(mnemonic);
+
+        if (!list) return ok(-1);
+
+        try {
+            const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
+            txb.setVersion(1)
+            
+            let sum = 0;
+            let needToSign = 0;
+            for (let i=0; i<list.length; i++)
+            {
+                txb.addInput(Buffer.from(list[i].tx_hash, "hex").reverse(), list[i].tx_pos);
+                sum += list[i].value;
+
+                needToSign++;
+
+                if (sum > amount*100000000)
+                    break;
+            }
+            
+            const change = sum - amount*100000000 - fee;
+
+            if (change < 0) return ok(-2);
+
+            txb.addOutput(address_to, (amount*100000000).toFixed(0)*1);
+            txb.addOutput(address.p2pkh.address, change.toFixed(0)*1);
+
+            for (let i=0; i<needToSign; i++)
+                txb.sign(i, ecPair)
+
+            const ret = txb.build().toHex();
+
+            ok({
+                raw: ret, 
+                amount: (amount*100000000).toFixed(0)*1, 
+                address_to: address_to, 
+                change: change.toFixed(0)*1,
+                change_address: address.p2pkh.address,
+                fee: fee.toFixed(0)*1
+            })
+        }
+        catch(e) {console.log(e)}
+
+        /*const address = exports.GetAddress(mnemonic);
         const ecPair = multicoin.ECPair.fromPrivateKey(address.privateKey, { network: bitcoin.networks.testnet })
 
         if (!ecPair)
@@ -153,7 +224,7 @@ exports.withdraw = function(mnemonic, address_to, amount)
             {
                 console.log(e)
             }
-        })
+        })*/
     })
 }
 

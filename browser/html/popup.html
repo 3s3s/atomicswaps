@@ -102,6 +102,7 @@
                           <td>Bitcoin (testnet)</td><td id="txt_balance_bitcointest">0.000000</td>
                           <td>
                             <div class="gap-2 d-md-flex justify-content-md-end">
+                              <button id="btn_bitcointest_sell" type="button" class="btn btn-info btn-sm">Sell</button>
                               <button id="btn_bitcointest_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
                               <button id="btn_bitcointest_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
                             </div>
@@ -199,6 +200,35 @@
         </div>
       </div>
     </div>
+
+    <div id="createorder_sell_dialog" class="modal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Create sell order</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="id_sell_coin" style="display:none;"></div>
+            <form>
+              <div class="mb-3">
+                <label for="sell_amount" class="form-label">Amount to sell:</label>
+                <input id="sell_amount" type="text" class="form-control">
+              </div>
+              <div class="mb-3">
+                <label for="buy_amount" class="form-label">Amount to buy:</label>
+                <input id="buy_amount" type="text" class="form-control">
+              </div>
+            </form>          
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button id="createorder_sell_ok" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
        
     <div id="wallet_withdraw_dialog" class="modal" tabindex="-1">
       <div class="modal-dialog">

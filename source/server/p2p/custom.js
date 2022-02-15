@@ -20,7 +20,7 @@ exports.HandleMessage = async function(message)
             p2p.broadcastMessage({
                 request: "custom", 
                 params: {
-                    uid: message.params["uid"], 
+                    destination: message.params["uid"], 
                     command: "answer", 
                     serverKey: message.params.serverKey || false, 
                     values: answer
@@ -29,14 +29,34 @@ exports.HandleMessage = async function(message)
         
         return FreeMemory();                
     }
+    if (message.params["command"] == "new_order")
+    {
+        let answer = null;
 
-    if (message.params["command"] == "answer" && g_Callbacks[message.params.uid] !== undefined && message.params.values)
+        if (message.params["coin"] == "tbtc")
+            answer = await require("../../wallets/bitcoin_test/orders").HandleCreateOrder(message.params)
+
+        if (answer != null)
+            p2p.broadcastMessage({
+                request: "custom", 
+                params: {
+                    destination: message.params["uid"], 
+                    command: "answer", 
+                    serverKey: message.params.serverKey || false, 
+                    values: answer
+                }
+            });
+        
+        return FreeMemory();                       
+    }
+
+    if (message.params["command"] == "answer" && g_Callbacks[message.params.destination] !== undefined && message.params.values)
     {
         const values = message.params.serverKey && message.params.serverKey == require("../../constants").clientDHkeys.server_pub ? 
             require("../../utils").ClientDH_Decrypt(message.params.values) : message.params.values;
 
-        g_Callbacks[message.params.uid].callback(values);
-        delete g_Callbacks[message.params.uid];
+        g_Callbacks[message.params.destination].callback(values);
+        delete g_Callbacks[message.params.destination];
         return;
     }
 

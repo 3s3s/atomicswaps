@@ -3,8 +3,11 @@
 const mn = require('electrum-mnemonic')
 const p2p = require("p2plib");
 const tbtc = require("../wallets/bitcoin_test/utils")
+const tbtc_orders = require("../wallets/bitcoin_test/orders")
 const utils = require("../utils")
 const $ = require('jquery');
+
+const orders = require("./tab_orders")
 
 let g_modal = null;
 exports.Init = function()
@@ -113,6 +116,40 @@ $("#old_password_button").on("click", e => {
     }
 })
 
+$("#btn_bitcointest_sell").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    $("#id_sell_coin").empty().text("tbtc")
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
+$("#createorder_sell_ok").on("click", async e => {
+    $("#alert_container").empty();
+
+    const sell_amount = $("#sell_amount").val();
+    const buy_amount = $("#buy_amount").val();
+    const sell_coin = $("#id_sell_coin").text();
+
+    let result = {status: false};
+    
+    const mnemonic = $("#wallet_seed").val();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return AlertFail();
+
+    if (sell_coin == "tbtc")
+    {
+        result = await tbtc_orders.CreateOrder(mnemonic, sell_amount, buy_amount);
+    }
+
+    g_modal.hide();
+})
+
 $("#btn_bitcointest_deposit").on("click", e => {
     $("#alert_container").empty();
 
@@ -141,7 +178,6 @@ $("#btn_bitcointest_withdraw").on("click", e => {
 
 $("#withdraw_ok").on("click", async e => {
     $("#alert_container").empty();
-
     g_modal.hide();
 
     const coin = $("#id_withdraw_coin").text()
@@ -219,7 +255,7 @@ function GetSavedSeedFromPassword(password)
 }
 
 let g_offline = false;
-exports.ShowBalances = function()
+exports.ShowBalances = function(force = true)
 {
     const connected = p2p.GetConnectedPeers();
     if (!connected.length)
@@ -230,10 +266,13 @@ exports.ShowBalances = function()
         if (!g_offline)
         {
             g_offline = true;
-            return setTimeout(ShowBalances, 5000)
+            return setTimeout(exports.ShowBalances, 5000)
         }
         return;
     }
+    if (!force && !g_offline)
+        return;
+
     g_offline = false;
 
     if ($("#btn_bitcointest_withdraw").text() == "Withdraw")

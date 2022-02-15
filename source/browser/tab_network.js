@@ -52,7 +52,7 @@ async function UpdatePeers()
         else
         {
             $("#network-status").append($("<span class='text-success'>Online</span>"))
-            tab_wallet.ShowBalances();
+            tab_wallet.ShowBalances(false);
         }
     }
 
