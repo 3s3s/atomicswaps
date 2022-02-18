@@ -11,3 +11,31 @@ exports.clientDHkeys = {
     server_pub: '9c3bb3b99924a6207a1c5495e474da487226eb1d',
     G: "a;ljg@$BFB"
 }
+
+exports.SQLITE_PATH = __dirname+"/server/sqlite.db";
+
+
+/*const order = {
+    sell_amount: sell_amount, 
+    buy_amount: buy_amount, 
+    sell_coin: "tbtc", 
+    p2pkh: address.p2pkh.hash.toString("hex"),
+    buy_coin: buy_coin}*/
+
+exports.dbTables = [
+    {
+       'name' : 'orders',
+       'cols' : [
+           ['uid', 'TEXT UNIQUE PRIMARY KEY'],
+           ['time', 'INTEGER'],
+           ['sell_amount', 'TEXT'],
+           ['buy_amount', 'TEXT'],
+           ['sell_coin', 'TEXT'],
+           ['seller_pubkey', 'TEXT'],
+           ['buy_coin', 'TEXT'],
+           ['json', 'TEXT'],
+           ['active', 'INTEGER']
+         ]
+    },
+]; 
+

@@ -5,6 +5,9 @@ const sodium = require('sodium-universal')
 const dh = require('diffie-hellman/browser')
 const g_constants = require("./constants")
 
+const customP2P = require("./server/p2p/custom")
+
+
 exports.Hash160 = function(arg, encode = "hex")
 {
   const str = arg+"";
@@ -134,6 +137,151 @@ exports.GenerateDH_keys = function(seed)
 
   return {keys1: keys1, keys2: keys2}
 }
+
+exports.SignObject = function(object, privateSeed)
+{
+  let sig = Buffer.alloc(sodium.crypto_sign_BYTES)
+  let pk = Buffer.alloc(sodium.crypto_sign_PUBLICKEYBYTES)
+  let sk = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES)
+  
+  sodium.crypto_sign_seed_keypair(pk, sk, privateSeed)
+
+  object["publicKey"] = pk.toString("hex");
+  
+  const message = JSON.stringify(object);
+
+  sodium.crypto_sign_detached(sig, Buffer.from(message), sk)
+
+  return {message: message, signature: sig.toString("hex")}    
+}
+
+exports.VerifySignature = function(message, signature)
+{
+  try {
+    const object = JSON.parse(message);
+    const pk = Buffer.from(object.publicKey, "hex");
+
+    return sodium.crypto_sign_verify_detached(Buffer.from(signature, "hex"), Buffer.from(message), pk)
+  }
+  catch(e) {
+    console.log(e)
+    return false;
+  }
+}
+
+/*exports.dbTables = [
+    {
+       'name' : 'orders',
+       'cols' : [
+           ['uid', 'TEXT UNIQUE PRIMARY KEY'],
+           ['time', 'INTEGER'],
+           ['sell_amount', 'TEXT'],
+           ['buy_amount', 'TEXT'],
+           ['sell_coin', 'TEXT'],
+           ['seller_pubkey', 'TEXT'],
+           ['buy_coin', 'TEXT'],
+           ['json', 'TEXT'],
+           ['active', 'INTEGER']
+         ]
+    },
+]; */
+
+exports.SaveOrderToDB = function(order, uid, insertonly = false)
+{
+  if (typeof window !== 'undefined')
+    return SaveOrderToBrowserDB(order, uid);
+
+  g_constants.dbTables["orders"].Delete("time<"+(Date.now() - 10*60*1000))
+
+  return new Promise(async ok => {
+    const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(uid)+"' AND sell_coin='"+escape(order.sell_coin)+"'")
+    if (exist && exist.length)
+      return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
+
+    g_constants.dbTables["orders"].Insert(
+        uid, 
+        Date.now(), 
+        order.sell_amount, 
+        order.buy_amount, 
+        order.sell_coin, 
+        order.seller_pubkey,
+        order.buy_coin,
+        JSON.stringify(order),
+        1, 
+        async ret => {
+          return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
+        })
+  })
+
+  function SaveOrderToBrowserDB(order, uid)
+  {
+    return {result: true, orders: [], sell_coin: order.sell_coin}
+  }
+}
+
+exports.getOrdersFromP2P = function(coin)
+{
+    return new Promise(ok => {
+        return customP2P.SendMessage({
+            command: "listOrders", 
+            coin: coin}, result => 
+        {
+            try { ok( result ) }
+            catch(e) { ok({result: false, message: e.message}) }
+        });
+    })
+}
+
+
+exports.SaveOrdersToDB = function(objOrders, sell_coin)
+{
+  if (typeof window !== 'undefined')
+    return SaveOrdersToBrowserDB(objOrders, sell_coin);
+
+  for (let key in objOrders)
+    exports.SaveOrderToDB(objOrders[key], objOrders[key].uid, true)
+
+  function SaveOrdersToBrowserDB(objOrders, sell_coin)
+  {
+    exports.storage.setItem("orders_"+sell_coin, objOrders);
+  }
+}
+
+exports.GetOrdersFromDB = async function(sell_coin)
+{
+  if (typeof window !== 'undefined')
+    return GetOrdersFromBrowserDB(sell_coin);
+
+  g_constants.dbTables["orders"].Delete("time<"+(Date.now() - 10*60*1000));
+
+  const rows = await g_constants.dbTables["orders"].Select("*", "sell_coin='"+escape(sell_coin)+"' AND active=1", "ORDER BY sell_amount DESC LIMIT 100")
+
+  /*let ret = {};
+
+  for (let i=0; i<rows.length; i++)
+    ret[rows[i].uid] = rows[i];*/
+
+  return rows;
+
+  function GetOrdersFromBrowserDB(sell_coin)
+  {
+    let ret = {};
+
+    const orders = exports.storage.getItem("orders_"+sell_coin);
+    if (!orders) return ret;
+
+    for (let key in orders)
+    {
+      if (orders[key].time < Date.now() - 60*10*1000)
+        continue;
+
+      ret[key] = orders[key];
+    }
+
+    return ret;
+  }
+}
+
 
 exports.storage = {
   getItem : function(key) {

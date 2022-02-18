@@ -6,5 +6,6 @@ const customHandlers = {
     SSL_options: g_constants.SSL_options
 }
 
+require("./database").Init();
 require("p2plib").StartServer(customHandlers);    
 

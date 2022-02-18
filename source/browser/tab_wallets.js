@@ -130,6 +130,7 @@ $("#btn_bitcointest_sell").on("click", e => {
 
 $("#createorder_sell_ok").on("click", async e => {
     $("#alert_container").empty();
+    g_modal.hide();
 
     const sell_amount = $("#sell_amount").val();
     const buy_amount = $("#buy_amount").val();
@@ -144,10 +145,24 @@ $("#createorder_sell_ok").on("click", async e => {
 
     if (sell_coin == "tbtc")
     {
-        result = await tbtc_orders.CreateOrder(mnemonic, sell_amount, buy_amount);
-    }
+        result = await tbtc_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1);
 
-    g_modal.hide();
+        if (result.sell_coin != sell_coin)
+            return AlertFail("Sell coin mismatch "+result.sell_coin);
+
+        if (result && result.result == false)
+            return AlertFail(result.message);
+        
+        if (result && result.result == true)
+        {
+            orders.UpdateOrders(result.orders, result.sell_coin, true);
+
+            if (result.orders.length)
+                return AlertSuccess("Orders updated!"); 
+            else
+                return AlertFail("Orders NOT updated!");  
+        }       
+    }
 })
 
 $("#btn_bitcointest_deposit").on("click", e => {
