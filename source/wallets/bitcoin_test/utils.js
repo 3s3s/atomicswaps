@@ -76,6 +76,13 @@ exports.GetBalance = async function(mnemonic, callback = null)
     })
 }
 
+exports.IsMyPublicKey = function(mnemonic, seller_pubkey)
+{
+    const address = exports.GetAddress(mnemonic);
+
+    return seller_pubkey == address.p2pkh.hash.toString("hex")
+}
+
 exports.GetAddress = function(mnemonic)
 {
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });

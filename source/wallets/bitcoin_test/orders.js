@@ -14,7 +14,6 @@ exports.HandleListOrders = async function(params)
         console.log(e);
         return null;
     }
-
 }
 
 exports.HandleCreateOrder = async function(params)
@@ -120,6 +119,7 @@ exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "tx
             coin: "tbtc"}, result => 
         {
             try { 
+                result["seller_pubkey"] = order.seller_pubkey;
                 return ok( result )
             }
             catch(e) { ok({result: false, message: e.message}) }
@@ -127,3 +127,60 @@ exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "tx
 
     })
 }
+
+exports.DeleteOrder = function(mnemonic, uid)
+{
+    const address = tbtc_utils.GetAddress(mnemonic);
+
+    const order = {
+        seller_pubkey: address.p2pkh.hash.toString("hex"),
+        uid: uid}
+
+    const sign = utils.SignObject(order, address.privateKey)
+
+    return new Promise(ok => {
+        return customP2P.SendMessage({
+            command: "deleteOrder", 
+            request: sign.message,
+            sign: sign.signature,
+            coin: "tbtc"}, result => 
+        {
+            try { 
+                return ok( result )
+            }
+            catch(e) { ok({result: false, message: e.message}) }
+        });
+
+    })
+}
+
+exports.RefreshOrder = function(mnemonic, uid, seller_pubkey)
+{
+    const address = tbtc_utils.GetAddress(mnemonic);
+
+    if (seller_pubkey != address.p2pkh.hash.toString("hex"))
+        return;
+
+    const order = {
+        seller_pubkey: address.p2pkh.hash.toString("hex"),
+        uid: uid}
+
+    const sign = utils.SignObject(order, address.privateKey)
+
+    return new Promise(ok => {
+        return customP2P.SendMessage({
+            command: "refreshOrder", 
+            request: sign.message,
+            sign: sign.signature,
+            coin: "tbtc"}, result => 
+        {
+            try { 
+                return ok( result )
+            }
+            catch(e) { ok({result: false, message: e.message}) }
+        });
+
+    })
+}
+
+

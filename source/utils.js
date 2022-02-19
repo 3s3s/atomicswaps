@@ -219,6 +219,49 @@ exports.SaveOrderToDB = function(order, uid, insertonly = false)
   }
 }
 
+exports.DeleteOrderFromDB = async function(params)
+{
+  if (typeof window !== 'undefined')  return null;
+
+  try {
+      const check = exports.VerifySignature(params.request, params.sign)
+      if (!check)
+          return {result: false, message: "Signature error"};
+
+      const order = JSON.parse(params.request);
+
+      g_constants.dbTables["orders"].Update("active=0", `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}'`);
+
+      return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
+  }
+  catch(e) {
+      console.log(e);
+      return null;
+  }
+}
+
+exports.RefreshOrderInDB = async function(params)
+{
+  if (typeof window !== 'undefined')  return null;
+
+  try {
+      const check = exports.VerifySignature(params.request, params.sign)
+      if (!check)
+          return {result: false, message: "Signature error"};
+
+      const order = JSON.parse(params.request);
+
+      g_constants.dbTables["orders"].Update(`time=${Date.now()}`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
+
+      return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
+  }
+  catch(e) {
+      console.log(e);
+      return null;
+  }
+
+}
+
 exports.getOrdersFromP2P = function(coin)
 {
     return new Promise(ok => {
@@ -231,7 +274,6 @@ exports.getOrdersFromP2P = function(coin)
         });
     })
 }
-
 
 exports.SaveOrdersToDB = function(objOrders, sell_coin)
 {
@@ -256,11 +298,6 @@ exports.GetOrdersFromDB = async function(sell_coin)
 
   const rows = await g_constants.dbTables["orders"].Select("*", "sell_coin='"+escape(sell_coin)+"' AND active=1", "ORDER BY sell_amount DESC LIMIT 100")
 
-  /*let ret = {};
-
-  for (let i=0; i<rows.length; i++)
-    ret[rows[i].uid] = rows[i];*/
-
   return rows;
 
   function GetOrdersFromBrowserDB(sell_coin)
@@ -282,6 +319,49 @@ exports.GetOrdersFromDB = async function(sell_coin)
   }
 }
 
+/*exports.UpdateOrderTime = async function(orderID)
+{
+  if (typeof window !== 'undefined')
+    return;
+
+  const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(orderID)+"'")
+  if (!exist || exist.length != 1)
+    return;
+
+  g_constants.dbTables["orders"].Insert(
+        exist[0].uid, 
+        Date.now(), 
+        exist[0].sell_amount, 
+        exist[0].buy_amount, 
+        exist[0].sell_coin, 
+        exist[0].seller_pubkey,
+        exist[0].buy_coin,
+        exist[0].json,
+        exist[0].active, 
+        async ret => {})
+}
+
+/*exports.DeleteOrder = async function(orderID)
+{
+  if (typeof window !== 'undefined')
+    return;
+
+  const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(orderID)+"'")
+  if (!exist || exist.length != 1)
+    return;
+
+  g_constants.dbTables["orders"].Insert(
+        exist[0].uid, 
+        Date.now(), 
+        exist[0].sell_amount, 
+        exist[0].buy_amount, 
+        exist[0].sell_coin, 
+        exist[0].seller_pubkey,
+        exist[0].buy_coin,
+        exist[0].json,
+        0, 
+        async ret => {})
+}*/
 
 exports.storage = {
   getItem : function(key) {

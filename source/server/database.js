@@ -16,6 +16,9 @@ exports.Init = function()
         g_constants.dbTables[i]["Insert"] = function () { 
             Insert(g_constants.dbTables[i], arguments);
         }
+        g_constants.dbTables[i]["Update"] = function (SET, WHERE) { 
+            Update(g_constants.dbTables[i], SET, WHERE);
+        }
         g_constants.dbTables[i]['Delete'] = function (WHERE, callback = null) {
             Delete(g_constants.dbTables[i], WHERE, callback);
         };
@@ -51,7 +54,19 @@ function CreateTable(table)
     });
 }
 
+function Update(tableObject, SET, WHERE)
+{
+    try {
+        database.run(`UPDATE ${tableObject.name} SET ${SET} WHERE ${WHERE}`, err => {
+            if (err)
+                console.log(err);
+        })
+    }
+    catch(e) {
+        console.log(e)
+    }
 
+}
 function Insert(tableObject, values)
 {
     try {

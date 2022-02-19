@@ -1,6 +1,7 @@
 'use strict';
 
 const p2p = require("p2plib");
+const utils = require("../../utils")
 
 let g_Callbacks = {};
 
@@ -28,6 +29,13 @@ exports.HandleMessage = async function(message)
             answer = await require("../../wallets/bitcoin_test/orders").HandleListOrders(message.params)
     }
 
+    if (message.params["command"] == "deleteOrder" && message.params.request && message.params.sign)
+         answer = await utils.DeleteOrderFromDB(message.params)
+
+    if (message.params["command"] == "refreshOrder" && message.params.request && message.params.sign)
+        answer = await utils.RefreshOrderInDB(message.params)
+
+        
     if (answer != null)
         p2p.broadcastMessage({
             request: "custom", 
