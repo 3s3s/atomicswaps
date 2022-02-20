@@ -198,9 +198,16 @@ exports.SaveOrderToDB = function(order, uid, insertonly = false)
     if (exist && exist.length)
       return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
 
+    if (!order.request || !order.sign)
+      return {result: false, message: "Signature not found"};
+
+    const check = exports.VerifySignature(order.request, order.sign)
+    if (!check)
+        return {result: false, message: "Signature error"};
+
     g_constants.dbTables["orders"].Insert(
         uid, 
-        Date.now(), 
+        order.time, 
         order.sell_amount, 
         order.buy_amount, 
         order.sell_coin, 
@@ -221,7 +228,8 @@ exports.SaveOrderToDB = function(order, uid, insertonly = false)
 
 exports.DeleteOrderFromDB = async function(params)
 {
-  if (typeof window !== 'undefined')  return null;
+  if (typeof window !== 'undefined')
+    return DeleteOrderFromBrowserDB(params)
 
   try {
       const check = exports.VerifySignature(params.request, params.sign)
@@ -238,6 +246,18 @@ exports.DeleteOrderFromDB = async function(params)
       console.log(e);
       return null;
   }
+
+  async function DeleteOrderFromBrowserDB(params)
+  {
+    const orders = await exports.GetOrdersFromDB(params.sell_coin);
+
+    if (!orders[params.uid])
+      return;
+
+    orders[params.uid].active = 0;
+
+    exports.SaveOrdersToDB(orders, params.sell_coin)
+  }
 }
 
 exports.RefreshOrderInDB = async function(params)
@@ -249,9 +269,17 @@ exports.RefreshOrderInDB = async function(params)
       if (!check)
           return {result: false, message: "Signature error"};
 
-      const order = JSON.parse(params.request);
+      let _order = JSON.parse(params.request);
+      _order["request"] = params.request;
+      _order["sign"] = params.sign;
 
-      g_constants.dbTables["orders"].Update(`time=${Date.now()}`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
+      const order = _order;
+
+      const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(order.uid)+"' ")
+      if (!exist || !exist.length)
+        return null;
+
+      g_constants.dbTables["orders"].Update(`time=${order.time}, json='${JSON.stringify(order)}'`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
 
       return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
   }
@@ -262,17 +290,11 @@ exports.RefreshOrderInDB = async function(params)
 
 }
 
-exports.getOrdersFromP2P = function(coin)
+exports.getOrdersFromP2P = function(coin, callback)
 {
-    return new Promise(ok => {
-        return customP2P.SendMessage({
-            command: "listOrders", 
-            coin: coin}, result => 
-        {
-            try { ok( result ) }
-            catch(e) { ok({result: false, message: e.message}) }
-        });
-    })
+  return customP2P.SendMessage({
+        command: "listOrders", 
+        coin: coin}, callback);
 }
 
 exports.SaveOrdersToDB = function(objOrders, sell_coin)
@@ -318,50 +340,6 @@ exports.GetOrdersFromDB = async function(sell_coin)
     return ret;
   }
 }
-
-/*exports.UpdateOrderTime = async function(orderID)
-{
-  if (typeof window !== 'undefined')
-    return;
-
-  const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(orderID)+"'")
-  if (!exist || exist.length != 1)
-    return;
-
-  g_constants.dbTables["orders"].Insert(
-        exist[0].uid, 
-        Date.now(), 
-        exist[0].sell_amount, 
-        exist[0].buy_amount, 
-        exist[0].sell_coin, 
-        exist[0].seller_pubkey,
-        exist[0].buy_coin,
-        exist[0].json,
-        exist[0].active, 
-        async ret => {})
-}
-
-/*exports.DeleteOrder = async function(orderID)
-{
-  if (typeof window !== 'undefined')
-    return;
-
-  const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(orderID)+"'")
-  if (!exist || exist.length != 1)
-    return;
-
-  g_constants.dbTables["orders"].Insert(
-        exist[0].uid, 
-        Date.now(), 
-        exist[0].sell_amount, 
-        exist[0].buy_amount, 
-        exist[0].sell_coin, 
-        exist[0].seller_pubkey,
-        exist[0].buy_coin,
-        exist[0].json,
-        0, 
-        async ret => {})
-}*/
 
 exports.storage = {
   getItem : function(key) {

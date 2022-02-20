@@ -14,21 +14,22 @@ exports.Init = function()
     setInterval(RefreshMyOrders, 60*1000)
 }
 
-async function UpdateOrdersTable()
+function UpdateOrdersTable()
 {
     if ($("#id_sell_coin").text() == "")
         $("#id_sell_coin").text("tbtc")
 
     const sell_coin = $("#id_sell_coin").text();
 
-    const result = await utils.getOrdersFromP2P(sell_coin);
+    utils.getOrdersFromP2P(sell_coin, async result => {
+        if (!result || result.result != true || result.sell_coin != sell_coin)
+            return;
 
-    if (!result || result.result != true || result.sell_coin != sell_coin)
-        return;
+        const currentSavedOrders = await exports.UpdateOrders(result.orders, result.sell_coin)
 
-    const currentSavedOrders = await exports.UpdateOrders(result.orders, result.sell_coin)
+        UpdateTable(currentSavedOrders, result.sell_coin);
+    });
 
-    UpdateTable(currentSavedOrders, result.sell_coin);
 }
 
 function UpdateTable(currentSavedOrders, sell_coin)
@@ -38,6 +39,9 @@ function UpdateTable(currentSavedOrders, sell_coin)
     $("#table_orders_body").empty()
     for (let key in currentSavedOrders)
     {
+        if (currentSavedOrders[key].active == 0)
+            continue;
+
         const orderUID = currentSavedOrders[key].uid;
 
         const td1 = $(`<td>${currentSavedOrders[key].seller_pubkey}</td>`)
@@ -88,12 +92,25 @@ exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
     for (let i=0; i<orders.length; i++)
     {
         const order = orders[i];
-        if (!order["uid"])
+        if (!order["uid"] || !order["json"] || savedOrders[order.uid])
             continue;
 
-        if (!savedOrders[order.uid])
-        {
-            savedOrders[order.uid] = order;
+        try {
+            const checker = JSON.parse(unescape(order.json));
+            if (!checker["request"] || !checker["sign"])
+                continue;
+
+            if (!utils.VerifySignature(checker["request"], checker["sign"]))
+                continue;
+
+            const _order = JSON.parse(checker["request"])
+            if (_order.time != order.time)
+                continue;
+
+            savedOrders[order.uid] = _order
+            savedOrders[order.uid].uid = order.uid
+        }
+        catch(e) {
             continue;
         }
     }
@@ -119,6 +136,6 @@ async function RefreshMyOrders()
     for (let key in savedOrders)
     {
         if (sell_coin == "tbtc")
-            tbtc_orders.RefreshOrder(mnemonic, savedOrders[key].uid, savedOrders[key].seller_pubkey)
+            tbtc_orders.RefreshOrder(mnemonic, savedOrders[key]); //savedOrders[key].uid, savedOrders[key].seller_pubkey)
     }
 }

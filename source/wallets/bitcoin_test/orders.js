@@ -25,7 +25,11 @@ exports.HandleCreateOrder = async function(params)
         if (!check)
             return {result: false, message: "Signature error"};
 
-        const order = JSON.parse(params.request);
+        let _order = JSON.parse(params.request);
+        _order["request"] = params.request;
+        _order["sign"] = params.sign;
+
+        const order = _order;
 
         if (order.sell_amount*1 <= 100)
             return {
@@ -107,6 +111,7 @@ exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "tx
         buy_amount: buy_amount, 
         sell_coin: "tbtc", 
         seller_pubkey: address.p2pkh.hash.toString("hex"),
+        time: Date.now(),
         buy_coin: buy_coin}
 
     const sign = utils.SignObject(order, address.privateKey)
@@ -146,6 +151,10 @@ exports.DeleteOrder = function(mnemonic, uid)
             coin: "tbtc"}, result => 
         {
             try { 
+                if (result.result == true)
+                {
+                    utils.DeleteOrderFromDB({uid: uid, sell_coin: "tbtc"})
+                }
                 return ok( result )
             }
             catch(e) { ok({result: false, message: e.message}) }
@@ -154,17 +163,22 @@ exports.DeleteOrder = function(mnemonic, uid)
     })
 }
 
-exports.RefreshOrder = function(mnemonic, uid, seller_pubkey)
+exports.RefreshOrder = function(mnemonic, orderOld)
 {
     const address = tbtc_utils.GetAddress(mnemonic);
 
-    if (seller_pubkey != address.p2pkh.hash.toString("hex"))
+    if (orderOld.seller_pubkey != address.p2pkh.hash.toString("hex"))
         return;
 
     const order = {
-        seller_pubkey: address.p2pkh.hash.toString("hex"),
-        uid: uid}
-
+        sell_amount: orderOld.sell_amount, 
+        buy_amount: orderOld.buy_amount, 
+        sell_coin: orderOld.sell_coin, 
+        seller_pubkey: orderOld.seller_pubkey,
+        time: Date.now(),
+        uid: orderOld.uid,
+        buy_coin: orderOld.buy_coin}
+    
     const sign = utils.SignObject(order, address.privateKey)
 
     return new Promise(ok => {
@@ -172,7 +186,7 @@ exports.RefreshOrder = function(mnemonic, uid, seller_pubkey)
             command: "refreshOrder", 
             request: sign.message,
             sign: sign.signature,
-            coin: "tbtc"}, result => 
+            coin: orderOld.sell_coin}, result => 
         {
             try { 
                 return ok( result )
