@@ -194,7 +194,7 @@ exports.SaveOrderToDB = function(_order, uid, insertonly = false)
   g_constants.dbTables["orders"].Delete("time<"+(Date.now() - 10*60*1000))
 
   if (!_order.json)
-    return {result: false, message: "order.json not found"};
+    _order.json = JSON.stringify(_order)
 
   try {
     const check = JSON.parse(unescape(_order.json))
