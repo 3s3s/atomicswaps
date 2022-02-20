@@ -76,11 +76,16 @@ exports.GetBalance = async function(mnemonic, callback = null)
     })
 }
 
+let g_MyKeys = {}
 exports.IsMyPublicKey = function(mnemonic, seller_pubkey)
 {
+    if (g_MyKeys[seller_pubkey] == true)
+        return true;
+
     const address = exports.GetAddress(mnemonic);
 
-    return seller_pubkey == address.p2pkh.hash.toString("hex")
+    g_MyKeys[seller_pubkey] = seller_pubkey == address.p2pkh.hash.toString("hex");
+    return g_MyKeys[seller_pubkey];
 }
 
 exports.GetAddress = function(mnemonic)

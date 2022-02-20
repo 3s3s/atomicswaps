@@ -1,6 +1,5 @@
 "use strict";
 
-const customP2P = require("../../server/p2p/custom")
 const tbtc_utils = require("./utils")
 const utils = require("../../utils")
 const g_constants = require("../../constants")
@@ -102,7 +101,7 @@ exports.HandleCreateOrder = async function(params)
     return 0;
 }
 
-exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "txmr")
+/*exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "txmr")
 {
     const address = tbtc_utils.GetAddress(mnemonic);
 
@@ -131,9 +130,9 @@ exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "tx
         });
 
     })
-}
+}*/
 
-exports.DeleteOrder = function(mnemonic, uid)
+/*exports.DeleteOrder = function(mnemonic, uid)
 {
     const address = tbtc_utils.GetAddress(mnemonic);
 
@@ -161,9 +160,9 @@ exports.DeleteOrder = function(mnemonic, uid)
         });
 
     })
-}
+}*/
 
-exports.RefreshOrder = function(mnemonic, orderOld)
+/*exports.RefreshOrder = function(mnemonic, orderOld)
 {
     const address = tbtc_utils.GetAddress(mnemonic);
 
@@ -196,5 +195,5 @@ exports.RefreshOrder = function(mnemonic, orderOld)
 
     })
 }
-
+*/
 

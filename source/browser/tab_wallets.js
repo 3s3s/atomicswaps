@@ -3,7 +3,7 @@
 const mn = require('electrum-mnemonic')
 const p2p = require("p2plib");
 const tbtc = require("../wallets/bitcoin_test/utils")
-const tbtc_orders = require("../wallets/bitcoin_test/orders")
+const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
 const $ = require('jquery');
 
@@ -143,9 +143,10 @@ $("#createorder_sell_ok").on("click", async e => {
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return AlertFail();
 
+    result = await p2p_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1, sell_coin);
+    
     if (sell_coin == "tbtc")
     {
-        result = await tbtc_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1);
 
         if (result.sell_coin != sell_coin)
             return AlertFail("Sell coin mismatch "+result.sell_coin);

@@ -1,7 +1,7 @@
 "use strict";
 
-const tbtc_orders = require("../wallets/bitcoin_test/orders")
 const tbtc_utils = require("../wallets/bitcoin_test/utils")
+const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
 const $ = require('jquery');
 
@@ -49,8 +49,7 @@ function UpdateTable(currentSavedOrders, sell_coin)
         const td3 = $(`<td>${(currentSavedOrders[key].buy_amount / (currentSavedOrders[key].sell_amount)).toFixed(8)} ${currentSavedOrders[key].buy_coin}</td>`)
         
         const buttonDelete = $(`<button type="button" class="btn btn-primary btn-sm">Delete</button>`).on("click", e => {
-            if (sell_coin == "tbtc")
-                tbtc_orders.DeleteOrder(mnemonic, orderUID)
+            p2p_orders.DeleteOrder(mnemonic, orderUID, sell_coin)
 
             UpdateOrdersTable();
         })
@@ -64,6 +63,7 @@ function UpdateTable(currentSavedOrders, sell_coin)
 
         $("#table_orders_body").append(row)
     }
+
 }
 
 /*exports.dbTables = [
@@ -84,16 +84,29 @@ function UpdateTable(currentSavedOrders, sell_coin)
 
 exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
 {
-    if (!orders || !orders.length)
-        return {};
+    const mnemonic = $("#wallet_seed").val();
 
     let savedOrders = await utils.GetOrdersFromDB(sell_coin);
+
+    if (!orders || !orders.length)
+        return savedOrders;
 
     for (let i=0; i<orders.length; i++)
     {
         const order = orders[i];
-        if (!order["uid"] || !order["json"] || savedOrders[order.uid])
+        if (!order["uid"] || !order["json"])
             continue;
+
+        if (savedOrders[order.uid])
+        {
+            if (savedOrders[order.uid].active == 1)
+                continue;
+
+            if (savedOrders[order.uid].active == 0)
+                p2p_orders.DeleteOrder(mnemonic, order.uid, sell_coin)
+
+            continue;
+        }
 
         try {
             const checker = JSON.parse(unescape(order.json));
@@ -104,11 +117,11 @@ exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
                 continue;
 
             const _order = JSON.parse(checker["request"])
-            if (_order.time != order.time)
+            if (_order.time != order.time || _order.active != order.active)
                 continue;
 
             savedOrders[order.uid] = _order
-            savedOrders[order.uid].uid = order.uid
+            savedOrders[order.uid]["uid"] = order.uid
         }
         catch(e) {
             continue;
@@ -135,7 +148,6 @@ async function RefreshMyOrders()
 
     for (let key in savedOrders)
     {
-        if (sell_coin == "tbtc")
-            tbtc_orders.RefreshOrder(mnemonic, savedOrders[key]); //savedOrders[key].uid, savedOrders[key].seller_pubkey)
+        p2p_orders.RefreshOrder(mnemonic, savedOrders[key]);
     }
 }

@@ -186,24 +186,35 @@ exports.VerifySignature = function(message, signature)
     },
 ]; */
 
-exports.SaveOrderToDB = function(order, uid, insertonly = false)
+exports.SaveOrderToDB = function(_order, uid, insertonly = false)
 {
   if (typeof window !== 'undefined')
-    return SaveOrderToBrowserDB(order, uid);
+    return SaveOrderToBrowserDB(_order, uid);
 
   g_constants.dbTables["orders"].Delete("time<"+(Date.now() - 10*60*1000))
+
+  if (!_order.json)
+    return {result: false, message: "order.json not found"};
+
+  try {
+    const check = JSON.parse(unescape(_order.json))
+    if (!check.request || !check.sign)
+      return {result: false, message: "Signature not found"};
+
+    if (!exports.VerifySignature(check.request, check.sign))
+        return {result: false, message: "Signature error"};
+  }
+  catch(e) {
+    console.log(e);
+    return {result: false, message: e.message};
+  }
+
+  const order = _order;
 
   return new Promise(async ok => {
     const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(uid)+"' AND sell_coin='"+escape(order.sell_coin)+"'")
     if (exist && exist.length)
       return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
-
-    if (!order.request || !order.sign)
-      return {result: false, message: "Signature not found"};
-
-    const check = exports.VerifySignature(order.request, order.sign)
-    if (!check)
-        return {result: false, message: "Signature error"};
 
     g_constants.dbTables["orders"].Insert(
         uid, 
@@ -277,9 +288,9 @@ exports.RefreshOrderInDB = async function(params)
 
       const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(order.uid)+"' ")
       if (!exist || !exist.length)
-        return null;
+        return exports.SaveOrderToDB(order, order.uid, true);
 
-      g_constants.dbTables["orders"].Update(`time=${order.time}, json='${JSON.stringify(order)}'`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
+      g_constants.dbTables["orders"].Update(`time=${escape(order.time)}, json='${escape(JSON.stringify(order))}'`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
 
       return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
   }
