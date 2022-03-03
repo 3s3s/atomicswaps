@@ -381,3 +381,4 @@ exports.storage = {
     stor.setItem(key, JSON.stringify(value));
   }
 };
+

@@ -2,6 +2,7 @@
 
 const mn = require('electrum-mnemonic')
 const p2p = require("p2plib");
+const txmr = require("../wallets/monero_test/utils")
 const tbtc = require("../wallets/bitcoin_test/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
@@ -161,6 +162,35 @@ $("#createorder_sell_ok").on("click", async e => {
             return AlertFail("Orders NOT updated!");  
     }       
 })
+///////////////////////////////////////////////////////////////////////////////btn_monerotest_deposit
+$("#btn_monerotest_deposit").on("click", async e => {
+    $("#alert_container").empty();
+
+    const mnemonic = $("#wallet_seed").val();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return AlertFail();
+
+    const moneroAddress = await txmr.GetAddress(mnemonic);
+
+    $("#deposit_address").empty().val(moneroAddress.address);
+    $("#priv_view_key").empty().val(moneroAddress.privViewKey);
+    $("#priv_spent_key").empty().val(moneroAddress.privSpentKey);
+
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
+    g_modal.show();  
+})
+$("#btn_monerotest_withdraw").on("click", async e => {
+    $("#alert_container").empty();
+
+    $("#withdraw_address").empty();
+    $("#withdraw_address_amount").empty();
+
+    $("#id_withdraw_coin").empty().text("txmr")
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
+    g_modal.show();  
+
+})
 
 $("#btn_bitcointest_deposit").on("click", e => {
     $("#alert_container").empty();
@@ -212,6 +242,12 @@ $("#withdraw_ok").on("click", async e => {
         $("#btn_bitcointest_withdraw").text("Withdraw");
 
     }
+    if (coin == "txmr")
+    {
+        const ret = await txmr.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
+
+        ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw);
+    }
 
     function ConfirmTransaction(coin, amount, address_to, rawTX)
     {
@@ -252,6 +288,7 @@ $("#withdraw_confirm").on("click", async e => {
         return;
     }
 })
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 function GetSavedSeedFromPassword(password)
 {
@@ -275,6 +312,7 @@ exports.ShowBalances = function(force = true)
         $("#txt_balance_bitcointest").empty().append($("<span class='text-danger'>Offline</span>"))
         $("#btn_bitcointest_withdraw").prop('disabled', true);
 
+        $("#txt_balance_monero").empty().append($("<span class='text-danger'>Offline</span>"))
         if (!g_offline)
         {
             g_offline = true;
@@ -293,9 +331,14 @@ exports.ShowBalances = function(force = true)
     const mnemonic = $("#wallet_seed").val();
 
     $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
+    $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
 
     tbtc.GetBalance(mnemonic, balance => {
         $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
+    })
+    
+    txmr.GetBalance(mnemonic, balance => {
+        $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0);
     })
 
 }  

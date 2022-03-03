@@ -17,6 +17,11 @@ exports.HandleMessage = async function(message)
         if (message.params["coin"] == "tbtc")
             answer = await require("../../wallets/bitcoin_test/utils").Electrum(message.params)
     }
+    if (message.params["command"] == "monerod")
+    { 
+        if (message.params["coin"] == "txmr")
+            answer = await require("../../wallets/monero_test/utils").Wallet(message.params)
+    }
     if (message.params["command"] == "new_order")
     {
         if (message.params["coin"] == "tbtc")
@@ -80,7 +85,7 @@ function FreeMemory()
     let tmp = {}
     for (let key in g_Callbacks)
     {
-        if (g_Callbacks[key].time < date - 60*1000)
+        if (g_Callbacks[key].time < date - 3*60*1000)
             continue;
         tmp[key] = g_Callbacks[key];
     }

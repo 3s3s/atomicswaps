@@ -134,7 +134,13 @@
                           </td>
                         </tr>
                         <tr>
-                          <td>Monero</td><td id="txt_balance_monero">0.000000</td><td></td>
+                          <td>Monero (stagenet)</td><td id="txt_balance_monero">0.000000</td>
+                          <td>
+                            <div class="gap-2 d-md-flex justify-content-md-end">
+                              <button id="btn_monerotest_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
+                              <button id="btn_monerotest_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
+                            </div>                          
+                          </td>
                         </tr>
                       </tbody>
                     </table>
@@ -199,7 +205,7 @@
     </div>
   
     <div id="wallet_depositaddress_dialog" class="modal" tabindex="-1">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Address for deposit to the wallet</h5>
@@ -212,6 +218,36 @@
                 <div class="col-sm-10">
                   <input type="text" readonly class="form-control-plaintext" id="deposit_address" value="">
                 </div>
+              </div>
+              <div class="mb-3 row">
+                <div class="accordion" id="accordionPrivKeys">
+                  <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseKeys" aria-expanded="false" aria-controls="collapseKeys">
+                        Private keys
+                      </button>
+                    </h2>
+                    <div id="collapseKeys" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionPrivKeys">
+                      <div class="accordion-body">
+                        <form>
+                          <div class="mb-3 row">
+                            <label for="priv_view_key" class="col-sm-2 col-form-label">View key</label>
+                            <div class="col-sm-10">
+                              <input type="text" readonly class="form-control-plaintext" id="priv_view_key" value="">
+                            </div>
+                          </div>
+                          <div class="mb-3 row">
+                            <label for="priv_spent_key" class="col-sm-2 col-form-label">Spend key</label>
+                            <div class="col-sm-10">
+                              <input type="text" readonly class="form-control-plaintext" id="priv_spent_key" value="">
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </form>          
           </div>

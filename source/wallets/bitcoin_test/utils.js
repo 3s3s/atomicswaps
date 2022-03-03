@@ -7,24 +7,14 @@ const bip32 = require('bip32')
 const customP2P = require("../../server/p2p/custom")
 const utils = require("../../utils")
 const g_constants = require("../../constants")
+const common = require("../common")
 
 exports.Electrum = function(params)
 {
-    if (typeof window !== 'undefined')  return null;
+    const reqObject = common.parseParams(params);
 
-    let dhKey = null;
-    try{
-        dhKey = require("../../private").serverDHkeys;
-    }
-    catch(e) {
-    }
-
-    if (!dhKey && (params.publicKey || params.serverKey))
-        return null;
-
-    if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
-    if (params.serverKey && params.serverKey != dhKey.pub) return null;
-
+    if (!reqObject) return null;
+ 
     const ElectrumCli = require('electrum-client')
 
     return new Promise(async ok => {
@@ -32,8 +22,6 @@ exports.Electrum = function(params)
 
         await ecl.connect()
         try{
-            const request = params.publicKey && params.serverKey ? utils.ServerDH_Decrypt(params.request) : params.request;
-            const reqObject = JSON.parse(request);
             const ret = await ecl.request(reqObject.request, reqObject.params);
 
             if (params.publicKey && params.serverKey)
