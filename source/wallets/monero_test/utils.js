@@ -29,25 +29,29 @@ exports.Wallet = async function(params)
 
     if (!reqObject || !reqObject.request || !reqObject.params) return null;
 
+    try {
+        const RPC = require("../../private").RPC.txmr || false;
+        if (!RPC) return ok(null);
+    }
+    catch(e) {
+        return ok(null);
+    }
     return new Promise(ok => {        
         require('fs').mkdir(__dirname+"/.wallets/", async err => {
             const walletName = __dirname+"/.wallets/"+utils.Hash160(reqObject.params[0]);
-
-            return ProcessMessage(walletName, reqObject, ok);
+               
+            return ProcessMessage(walletName, reqObject, ok, RPC);
         })
     });
 
 
-    async function ProcessMessage(walletName, reqObject, ok)
+    async function ProcessMessage(walletName, reqObject, ok, RPC)
     {
         try {
-            const RPC = require("../../private").RPC.txmr || false;
-            if (!RPC) return ok(null);
-
             if (g_openWallets[utils.Hash160(walletName)] == true)
             {
                 log("Wait Monero Wallet Message bacause wait old...")
-                return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok)
+                return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
             }
 
             g_openWallets[utils.Hash160(walletName)] = true;
