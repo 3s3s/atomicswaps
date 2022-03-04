@@ -299,6 +299,8 @@ $("#withdraw_ok").on("click", async e => {
         g_modal.hide();
         $("#id_progress_static").hide();
 
+        if (ret.message) return AlertFail(ret.message);
+
         ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw, ret.fee);
     }
 
