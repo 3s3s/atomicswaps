@@ -4,7 +4,8 @@ const worker = kzv_fetch.toString() +("\r\n"+ fs.readFileSync('./node_modules/mo
 const monero_wallet_full_wasm = "const STR = '" + fs.readFileSync('./node_modules/monero-javascript/dist/monero_wallet_full.wasm').toString("hex")+"'"
 
 fs.writeFile("./source/wallets/monero_common/monero_web_worker_2.js", "exports.STR= '"+escape(worker+monero_wallet_full_wasm)+"'", ret => {
-    console.log(ret)
+    if (ret) console.log(ret)
+    else console.log("Success: monero_common/monero_web_worker_2.js compiled")
 })
 
 function kzv_fetch(url, opt)

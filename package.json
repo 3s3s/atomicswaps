@@ -47,8 +47,8 @@
   "homepage": "https://github.com/3s3s/atomicswaps#readme",
   "scripts": {
     "start": "node ./source/server/main.js",
-    "compile": "browserify -u ./source/private.js ./source/browser/main.js > ./browser/js/main.js",
-    "compile_debug": "browserify -u ./source/private.js --debug ./source/browser/main.js > ./browser/js/main.js",
+    "compile": "node monero_wasm_helper.js && browserify -u ./source/private.js ./source/browser/main.js > ./browser/js/main.js",
+    "compile_debug": "node monero_wasm_helper.js && browserify -u ./source/private.js --debug ./source/browser/main.js > ./browser/js/main.js",
     "server": "node ./source/server/main.js",
     "daemon": "forever -s start ./source/server/main.js",
     "daemon_stop": "forever stop ./source/server/main.js"

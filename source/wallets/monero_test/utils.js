@@ -30,23 +30,13 @@ exports.Wallet = async function(params)
     if (!reqObject || !reqObject.request || !reqObject.params) return null;
 
     return new Promise(ok => {        
-        require('fs').mkdir(__dirname+"/wallets/", async err => {
-            const walletName = __dirname+"/wallets/"+utils.Hash160(reqObject.params[0]);
+        require('fs').mkdir(__dirname+"/.wallets/", async err => {
+            const walletName = __dirname+"/.wallets/"+utils.Hash160(reqObject.params[0]);
 
             return ProcessMessage(walletName, reqObject, ok);
         })
     });
 
-    async function _getBalance(params, viewOnlyWallet)
-    {
-        const outputsHex = await viewOnlyWallet.exportOutputs(true);
-        const balance = await viewOnlyWallet.getBalance();
-          
-        if (params.publicKey && params.serverKey)
-            return utils.ServerDH_Encrypt(JSON.stringify({confirmed: balance.toJSValue(), outputsHex: outputsHex}));
-        else
-            return JSON.stringify({confirmed: balance.toJSValue(), outputsHex: outputsHex}); 
-    }
 
     async function ProcessMessage(walletName, reqObject, ok)
     {
@@ -102,8 +92,14 @@ exports.Wallet = async function(params)
             if (reqObject.request == "getBalance")
             {
                 log("Handle: getBalance")
-                ret = await _getBalance(params, viewOnlyWallet);
+                const outputsHex = await viewOnlyWallet.exportOutputs(true);
+                const balance = await viewOnlyWallet.getBalance();
+                
+                ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex};
             }
+
+            if (reqObject.request == "broadcast")
+                ret = await viewOnlyWallet.submitTxs(reqObject.params[2]);
 
             if (reqObject.request == "importKeyImages")
             {
@@ -117,10 +113,17 @@ exports.Wallet = async function(params)
                     address: reqObject.params[3],
                     amount: reqObject.params[4]
                 });
-                ret = ret.toJson()
+                const unsignedTxHex = ret.getTxSet().getUnsignedTxHex();
+                
+                ret = ret.toJson();
 
-                log("importKeyImages ready. tx="+JSON.stringify(ret))
+                ret["unsignedTxHex"] = unsignedTxHex;
             }
+
+            ret = JSON.stringify(ret);
+
+            if (params.publicKey && params.serverKey)
+                ret = utils.ServerDH_Encrypt(ret);
 
             await viewOnlyWallet.close(true);
 
@@ -131,7 +134,13 @@ exports.Wallet = async function(params)
         catch(e) {
             g_openWallets[utils.Hash160(walletName)] = false;
             console.log(e);
-            return ok(null);
+
+            let ret = JSON.stringify({message: e.message});
+            
+            if (params.publicKey && params.serverKey)
+                ret = utils.ServerDH_Encrypt(ret);
+
+            return ok(ret);
         }   
     }
 }
@@ -151,8 +160,11 @@ exports.GetAddress = async function(mnemonic)
 let g_LastUpdated = {time: 0, data: 0};
 exports.GetBalance = function(mnemonic, callback = null)
 {
-    if (Date.now() - g_LastUpdated.time < 60*1000)
+    if (Date.now() - g_LastUpdated.time < 3*60*1000 && g_LastUpdated.data)
+    {
+        if (callback) return callback(g_LastUpdated.data)
         return g_LastUpdated.data;
+    }
 
     g_LastUpdated.time = Date.now();
 
@@ -173,7 +185,7 @@ exports.GetBalance = function(mnemonic, callback = null)
             try {
                 const ret = JSON.parse(balance)
 
-                g_LastUpdated = {time: Date.now, data: ret};
+                g_LastUpdated = {time: Date.now(), data: ret};
 
                 if (callback) return callback(ret);
                 ok(ret)
@@ -227,14 +239,17 @@ exports.withdraw = async function(mnemonic, address_to, amount)
                 try {
                     const unsignedTx = JSON.parse(result)
 
+                    if (!!unsignedTx.message) throw new Error(unsignedTx.message)
+
                     // describe unsigned tx set to confirm details
-                    const describedTxSet = await offlineWallet.describeTxSet(unsignedTx.getTxSet());
-                    const fee = describedTxSet.getTxs()[0].getFee();	// "Are you sure you want to send... ?"
+                    //const describedTxSet = await offlineWallet.describeTxSet(unsignedTx.getTxSet());
+                    const fee = unsignedTx.fee;//describedTxSet.getTxs()[0].getFee();	// "Are you sure you want to send... ?"
                     
                     // sign tx using offline wallet
-                    const signedTxHex = await offlineWallet.signTxs(unsignedTx.getTxSet().getUnsignedTxHex());
+                    //const signedTxHex = await offlineWallet.signTxs(unsignedTx.getTxSet().getUnsignedTxHex());
+                    const signedTxHex = await offlineWallet.signTxs(unsignedTx.unsignedTxHex);
 
-                    return ok({result: true, fee: fee, signedTxHex: signedTxHex});
+                    return ok({result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee, raw: signedTxHex});
                 }
                 catch(e) {
                     console.log(e)
@@ -247,6 +262,38 @@ exports.withdraw = async function(mnemonic, address_to, amount)
         console.log(e)
         return {result: false, message: e.message}
     }
+}
+
+exports.broadcast = async function(mnemonic, signedTxHex)
+{
+    const address = await exports.GetAddress(mnemonic);
+
+    const request = utils.ClientDH_Encrypt(JSON.stringify({
+        request: "broadcast",
+        params: [address.address, address.privViewKey, signedTxHex]}));
+    
+    return new Promise(async ok => {
+        customP2P.SendMessage({
+                            command: "monerod", 
+                            publicKey: g_constants.clientDHkeys.pub,
+                            serverKey: g_constants.clientDHkeys.server_pub, 
+                            request: request,
+                            coin: "txmr"}, async result => 
+        {
+            try {
+                const txid = JSON.parse(result)
+
+                if (!!txid.message) throw new Error(txid.message)
+
+                return ok({result: true, txid: txid[0]});
+            }
+            catch(e) {
+                console.log(e)
+                ok({result: false, message: e.message})
+            }
+        });   
+    });
+
 }
 
 if (monerojs.GenUtils.isBrowser())

@@ -18,7 +18,53 @@ exports.Init = function()
 
     $("#btn_bitcointest_withdraw").prop('disabled', true);
 
-    setInterval(exports.ShowBalances, 60*1000);
+    setInterval(exports.ShowBalances, 60*1000);  
+}
+
+function ShowProgressDialog(callback = null)
+{
+    if (g_modal) g_modal.hide();
+
+    g_modal = new bootstrap.Modal(document.getElementById('progress_await_dialog'))
+    $("#id_progress").attr("aria-valuenow", 180);
+    $("#id_progress").css("width", "100%");
+    $("#id_progress").text("180")
+    g_modal.show();  
+
+    $("#id_progress_static").attr("aria-valuenow", 180);
+    $("#id_progress_static").css("width", "100%");
+    $("#id_progress_static").text("180");
+    $("#id_progress_static").show();
+
+    const now = Date.now();
+
+    const nIntervalID = setInterval(() => {
+
+        const currPos = (180 - (Date.now() - now)/1000);
+
+        if (currPos < 0)
+        {
+            clearInterval(nIntervalID);
+            g_modal.hide();
+            $("#id_progress_static").hide();
+
+            if (callback) callback();
+            return;
+        }
+
+        const showPos = ((100*currPos)/180).toFixed(0)*1
+
+        $("#id_progress").attr("aria-valuenow", currPos);
+        $("#id_progress").css("width", showPos+"%");
+        $("#id_progress").text(currPos.toFixed(0))
+
+        $("#id_progress_static").attr("aria-valuenow", currPos);
+        $("#id_progress_static").css("width", showPos+"%");
+        $("#id_progress_static").text(currPos.toFixed(0))
+    
+    }, 1000)
+
+    return nIntervalID;
 }
 
 function AlertFail(text = "Invalid mnemonic! Checksum failed.")
@@ -244,12 +290,19 @@ $("#withdraw_ok").on("click", async e => {
     }
     if (coin == "txmr")
     {
+        const timer = ShowProgressDialog(() => {
+            AlertFail("Something wrong: timeout");
+        });
         const ret = await txmr.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
 
-        ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw);
+        clearInterval(timer);
+        g_modal.hide();
+        $("#id_progress_static").hide();
+
+        ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw, ret.fee);
     }
 
-    function ConfirmTransaction(coin, amount, address_to, rawTX)
+    function ConfirmTransaction(coin, amount, address_to, rawTX, fee = 0)
     {
         $("#alert_container").empty();
         g_modal.hide();
@@ -271,6 +324,8 @@ $("#withdraw_confirm").on("click", async e => {
     const coin = $("#id_withdraw_coin").text();
     const rawTX = $("#id_withdraw_tx").text();
 
+    const mnemonic = $("#wallet_seed").val();
+
     if (coin == "tbtc")
     {
         $("#btn_bitcointest_withdraw").prop('disabled', true);
@@ -286,6 +341,22 @@ $("#withdraw_confirm").on("click", async e => {
         $("#btn_bitcointest_withdraw").prop('disabled', false);
         $("#btn_bitcointest_withdraw").text("Withdraw");
         return;
+    }
+    if (coin == "txmr")
+    {
+        const timer = ShowProgressDialog(() => {
+            AlertFail("Something wrong: timeout");
+        });
+
+        const tx = await txmr.broadcast(mnemonic, rawTX);
+
+        clearInterval(timer);
+        g_modal.hide();
+        $("#id_progress_static").hide();
+
+        if (!tx.result) return AlertFail(tx.message);
+        
+        return AlertSuccess("txid: "+tx.txid)
     }
 })
 /////////////////////////////////////////////////////////////////////////////////////////////////

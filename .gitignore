@@ -5,3 +5,4 @@ private.js
 *.zip
 *.xpi
 tmp.js
+.wallets

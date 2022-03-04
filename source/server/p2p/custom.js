@@ -42,6 +42,7 @@ exports.HandleMessage = async function(message)
 
         
     if (answer != null)
+    {
         p2p.broadcastMessage({
             request: "custom", 
             params: {
@@ -51,6 +52,12 @@ exports.HandleMessage = async function(message)
                 values: answer
             }
         });
+    }
+
+    /*if (message.params["command"] == "answer" && typeof window !== 'undefined')
+    {
+        console.log("Got answer "+message.params.destination)
+    }*/
 
     if (message.params["command"] == "answer" && g_Callbacks[message.params.destination] !== undefined && message.params.values)
     {
