@@ -4,11 +4,31 @@ const g_crypto = require('crypto');
 const sodium = require('sodium-universal')
 const dh = require('diffie-hellman/browser')
 const g_constants = require("./constants")
+const monero = require("./wallets/monero")
+
+const BN = require('bn.js');
+const elliptic = require('elliptic');
+const EC = elliptic.ec
+const EdDSA = elliptic.eddsa;
+const ed25519 = new EdDSA('ed25519');
+const secp256k1 = new EC('secp256k1');
 
 const customP2P = require("./server/p2p/custom")
+const p2p_orders = require("./server/p2p/orders")
+const tbtc_utils = require("./wallets/bitcoin_test/utils")
+const sellerBTC = require("./swap/sellerBTC")
 
+let g_PASSWORD = "123";
+exports.setPassword = function(password)
+{
+  g_PASSWORD = password;
+}
+exports.getPassword = function()
+{
+  return g_PASSWORD;
+}
 
-exports.Hash160 = function(arg, encode = "hex")
+exports.Hash160 = function(arg, encode = null)
 {
   const str = arg+"";
   
@@ -69,7 +89,7 @@ exports.Decrypt = function(text, password)
 
 exports.ClientDH_Encrypt = function(message)
 {
-  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(g_constants.clientDHkeys.sec, "hex")
   diffiehellman.setPublicKey(g_constants.clientDHkeys.pub, "hex")
@@ -81,7 +101,7 @@ exports.ClientDH_Encrypt = function(message)
 
 exports.ClientDH_Decrypt = function(message)
 {
-  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(g_constants.clientDHkeys.sec, "hex")
   diffiehellman.setPublicKey(g_constants.clientDHkeys.pub, "hex")
@@ -97,7 +117,7 @@ exports.ServerDH_Encrypt = function(message)
 
   const serverDHkeys = require("./private").serverDHkeys;
 
-  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
   diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
@@ -113,7 +133,7 @@ exports.ServerDH_Decrypt = function(message)
 
   const serverDHkeys = require("./private").serverDHkeys;
 
-  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G, ""), "hex", Buffer.from("02", "hex"));
+  const diffiehellman = dh.createDiffieHellman(exports.Hash160(serverDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
   diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
@@ -125,8 +145,8 @@ exports.ServerDH_Decrypt = function(message)
 
 exports.GenerateDH_keys = function(seed)
 {
-  const diffiehellman1 = crypto.createDiffieHellman(utils.Hash160(seed, ""), "hex", Buffer.from("02", "hex"));
-  const diffiehellman2 = crypto.createDiffieHellman(utils.Hash160(seed, ""), "hex", Buffer.from("02", "hex"))
+  const diffiehellman1 = crypto.createDiffieHellman(utils.Hash160(seed), "hex", Buffer.from("02", "hex"));
+  const diffiehellman2 = crypto.createDiffieHellman(utils.Hash160(seed), "hex", Buffer.from("02", "hex"))
     
   // Generating keys
   diffiehellman1.generateKeys("hex");
@@ -145,6 +165,8 @@ exports.SignObject = function(object, privateSeed)
   let sk = Buffer.alloc(sodium.crypto_sign_SECRETKEYBYTES)
   
   sodium.crypto_sign_seed_keypair(pk, sk, privateSeed)
+
+  if (!!object["publicKey"]) throw new Error("SSignObject failed: property publicKey already exist")
 
   object["publicKey"] = pk.toString("hex");
   
@@ -188,6 +210,9 @@ exports.VerifySignature = function(message, signature)
 
 exports.SaveOrderToDB = function(_order, uid, insertonly = false)
 {
+  if (uid == 'undefined' || typeof uid === 'undefined')
+    return {result: false, message: "undefined message uid"}
+
   if (typeof window !== 'undefined')
     return SaveOrderToBrowserDB(_order, uid);
 
@@ -301,6 +326,46 @@ exports.RefreshOrderInDB = async function(params)
 
 }
 
+/*    const order = {
+        uid: orderUID,
+        sell_coin: sell_coin,
+        sell_amount: sell_amount,
+        seller_pubkey: seller_pubkey,
+        privViewKey: address.privViewKey,
+        pubSpentKey: address.pubSpentKey,
+        keys: keys
+    }
+}*/
+
+exports.InitBuyOrder = function(params)
+{
+  try {
+    const check = exports.VerifySignature(params.request, params.sign)
+    if (!check)
+        return {result: false, message: "Signature error"};
+
+    let _order = JSON.parse(params.request);
+    _order["request"] = params.request;
+    _order["sign"] = params.sign;
+
+    const swapInfo = _order;
+
+    const myOrder = p2p_orders.getMyOrder(swapInfo.uid);
+
+    if (myOrder == null) return null;
+
+    if (swapInfo.sell_coin == "tbtc")
+      return sellerBTC.InitBuyOrder(myOrder, swapInfo);
+
+    return {result: true};
+  }
+  catch(e) {
+      console.log(e);
+      return null;
+  }
+
+}
+
 exports.getOrdersFromP2P = function(coin, callback)
 {
   return customP2P.SendMessage({
@@ -351,6 +416,70 @@ exports.GetOrdersFromDB = async function(sell_coin)
     return ret;
   }
 }
+
+exports.genKeysDLEQ = function(privKey)
+{
+    const privateKey = new BN(privKey, "hex", "le")
+
+    const pubKeyBTC = secp256k1.curve.g.mul(privateKey).getX().toString("hex");
+    const pubKeyBTC_y = secp256k1.curve.g.mul(privateKey).getY().toString("hex");
+    const pubKeyXMR = elliptic.utils.toHex(ed25519.encodePoint(ed25519.curve.g.mul(privateKey)))
+
+    const k = secp256k1.genKeyPair().getPrivate().umod(ed25519.curve.n)
+
+    const A = secp256k1.curve.g.mul(k).getX().toString("hex");
+    const B = elliptic.utils.toHex(ed25519.encodePoint(ed25519.curve.g.mul(k)));
+    
+    const c = new BN(exports.Hash256(A + B + pubKeyBTC + pubKeyXMR), "hex");
+
+    const s = k.sub(c.mul(privateKey));
+    
+    return {
+      pubKeyBTC: pubKeyBTC, pubKeyBTC_y: pubKeyBTC_y,
+      pubKeyXMR: pubKeyXMR, 
+      s: s.toString("hex"), c: c.toString("hex")}
+    
+    /*const pubKeyBTC = secp256k1.curve.g.mul(privateKey).getX().toString("hex");
+    const pubKeyBTC_y = secp256k1.curve.g.mul(privateKey).getY().toString("hex");
+    const pubKeyXMR = ed25519.curve.g.mul(privateKey).getY().toString("hex");
+    const pubKeyXMR_x = ed25519.curve.g.mul(privateKey).getX().toString("hex");
+    
+    const k = secp256k1.genKeyPair().getPrivate().umod(ed25519.curve.n)
+
+    const A = secp256k1.curve.g.mul(k).getX().toString("hex");
+    const B = ed25519.curve.g.mul(k).getY().toString("hex");
+
+    const c = new BN(exports.Hash256(A + B + pubKeyBTC + pubKeyXMR), "hex");
+
+    const s = k.sub(c.mul(privateKey));
+
+    return {
+      pubBTC: pubKeyBTC, pubBTC_y: pubKeyBTC_y, 
+      pubXMR: pubKeyXMR, pubXMR_x: pubKeyXMR_x, 
+      s: s.toString("hex"), c: c.toString("hex")}*/
+}
+
+exports.checkKeysDLEQ = function(keys)
+{
+    const s1 = (new BN(keys.s, "hex")).umod(secp256k1.curve.n)
+    const s2 = (new BN(keys.s, "hex")).umod(ed25519.curve.n)
+
+    const pointBTC = secp256k1.curve.point(new BN(keys.pubKeyBTC, "hex"), new BN(keys.pubKeyBTC_y, "hex"))
+    const pointXMR = ed25519.decodePoint(elliptic.utils.parseBytes(keys.pubKeyXMR))
+    //const pointBTC = secp256k1.curve.point(new BN(keys.pubBTC, "hex"), new BN(keys.pubBTC_y, "hex"))
+    //const pointXMR = ed25519.curve.point(new BN(keys.pubXMR_x, "hex"), new BN(keys.pubXMR, "hex"))
+
+    const cY = pointBTC.mul(new BN(keys.c, "hex"));
+    const cZ = pointXMR.mul(new BN(keys.c, "hex"));
+
+    const A_ = secp256k1.curve.g.mul(s1).add(cY).getX().toString("hex")
+    const B_ = elliptic.utils.toHex(ed25519.encodePoint(ed25519.curve.g.mul(s2).add(cZ)))
+    //const A_ = secp256k1.curve.g.mul(s1).add(cY).getX().toString("hex")
+    //const B_ = ed25519.curve.g.mul(s2).add(cZ).getY().toString("hex")
+
+    return (keys.c == (new BN(exports.Hash256(A_ + B_ + keys.pubKeyBTC + keys.pubKeyXMR), "hex")).toString("hex"));
+}
+
 
 exports.storage = {
   getItem : function(key) {

@@ -8,6 +8,7 @@ const customP2P = require("../../server/p2p/custom")
 const utils = require("../../utils")
 const g_constants = require("../../constants")
 const common = require("../common")
+const monero = require("../monero")
 
 exports.Electrum = function(params)
 {
@@ -64,18 +65,6 @@ exports.GetBalance = async function(mnemonic, callback = null)
     })
 }
 
-let g_MyKeys = {}
-exports.IsMyPublicKey = function(mnemonic, seller_pubkey)
-{
-    if (g_MyKeys[seller_pubkey] == true)
-        return true;
-
-    const address = exports.GetAddress(mnemonic);
-
-    g_MyKeys[seller_pubkey] = seller_pubkey == address.p2pkh.hash.toString("hex");
-    return g_MyKeys[seller_pubkey];
-}
-
 exports.GetAddress = function(mnemonic)
 {
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });
@@ -83,10 +72,11 @@ exports.GetAddress = function(mnemonic)
 
     let p2pkh = bitcoin.payments.p2pkh({ pubkey: root.derivePath("m/0/0").publicKey, network: bitcoin.networks.testnet });
     
-    return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey};    
+    return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey, publicKey: root.derivePath("m/0/0").publicKey.toString("hex")};    
 }
 
-function listunspent(address)
+
+exports.listunspent = function(address)
 {
     return new Promise(ok => {       
         const request = utils.ClientDH_Encrypt(JSON.stringify({
@@ -118,13 +108,13 @@ exports.withdraw = function(mnemonic, address_to, amount)
         if (!ecPair)
             return ok(-3);
 
-        const list = await listunspent(address);
+        const list = await exports.listunspent(address);
 
         if (!list) return ok(-1);
 
         try {
             const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
-            txb.setVersion(1)
+            txb.setVersion(2)
             
             let sum = 0;
             let needToSign = 0;
@@ -135,7 +125,7 @@ exports.withdraw = function(mnemonic, address_to, amount)
 
                 needToSign++;
 
-                if (sum > amount*100000000)
+                if (sum - amount*100000000 - fee > 0)
                     break;
             }
             

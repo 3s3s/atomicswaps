@@ -6,6 +6,7 @@ const txmr = require("../wallets/monero_test/utils")
 const tbtc = require("../wallets/bitcoin_test/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
+const common = require("./common")
 const $ = require('jquery');
 
 const orders = require("./tab_orders")
@@ -67,30 +68,6 @@ function ShowProgressDialog(callback = null)
     return nIntervalID;
 }
 
-function AlertFail(text = "Invalid mnemonic! Checksum failed.")
-{
-    $("#alert_container").empty();
-    const alertFailMnemonic = `                    
-        <div id="alert_mnemonic_error" class="alert alert-danger alert-dismissible fade show" role="alert">
-            <span id="alert_error_text">${text}</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>`
-
-    $("#alert_container").append($(alertFailMnemonic));    
-}
-function AlertSuccess(text = "The mnemonic seed was encrypted and saved successfully")
-{
-    $("#alert_container").empty();
-
-    const alertSuccessMnemonic = `                    
-        <div id="alert_mnemonic_error" class="alert alert-success alert-dismissible fade show" role="alert">
-            <span>${text}</span>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>`;
-
-    $("#alert_container").append($(alertSuccessMnemonic)); 
-}
-
 $("#generate_seed").on("click", e => {
     $("#alert_container").empty();
 
@@ -104,7 +81,7 @@ $("#submit_seed").on("click", e => {
     const newSeed = $("#wallet_seed").val();
 
     if (!mn.validateMnemonic(newSeed, mn.PREFIXES.standard))
-        return AlertFail();
+        return common.AlertFail();
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_setpassword_dialog'))
     g_modal.show();  
@@ -117,24 +94,26 @@ $("#new_password").on("click", e => {
 
     if (password != $("#set_password").val())
         return $("#set_password_confirm").addClass("is-invalid")
+
+    utils.setPassword(password);
         
     $("#set_password_confirm").removeClass("is-invalid")
     g_modal.hide();
 
     const oldSeed = GetSavedSeedFromPassword(password);
     if (mn.validateMnemonic(oldSeed, mn.PREFIXES.standard))
-        return AlertFail("Wallet with this password already saved.");
+        return common.AlertFail("Wallet with this password already saved.");
     
     try {
-        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password, ""), utils.Encrypt(newSeed, password));
+        utils.storage.setItem("bitcoin_seed_"+utils.Hash160(password), utils.Encrypt(newSeed, password));
 
         if (GetSavedSeedFromPassword(password) != newSeed) throw new Error("Something wrong when trying to save encrypted mnemonic seed")
                 
-        AlertSuccess();
+        common.AlertSuccess();
         exports.ShowBalances();
     }
     catch(e) {
-        return AlertFail(e.message);
+        return common.AlertFail(e.message);
     }
 })
 
@@ -149,17 +128,19 @@ $("#old_password_button").on("click", e => {
     g_modal.hide();
     const password = $("#old_password").val();
 
+    utils.setPassword(password);
+
     try {
         const seed = GetSavedSeedFromPassword(password);
         if (!mn.validateMnemonic(seed, mn.PREFIXES.standard))
-            return AlertFail();
+            return common.AlertFail();
 
         $("#wallet_seed").val(seed);
-        AlertSuccess("The wallet was restored successfully");
+        common.AlertSuccess("The wallet was restored successfully");
         exports.ShowBalances();
     }
     catch(e) {
-        return AlertFail(e.message);
+        return common.AlertFail(e.message);
     }
 })
 
@@ -188,24 +169,24 @@ $("#createorder_sell_ok").on("click", async e => {
     const mnemonic = $("#wallet_seed").val();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
-        return AlertFail();
+        return common.AlertFail();
 
     result = await p2p_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1, sell_coin);
     
     if (result && result.result == false)
-        return AlertFail(result.message);
+        return common.AlertFail(result.message);
 
     if (result.sell_coin != sell_coin)
-        return AlertFail("Sell coin mismatch "+result.sell_coin);
+        return common.AlertFail("Sell coin mismatch "+result.sell_coin);
 
     if (result && result.result == true)
     {
         orders.UpdateOrders(result.orders, result.sell_coin, true);
 
         if (result.orders.length)
-            return AlertSuccess("Orders updated!"); 
+            return common.AlertSuccess("Orders updated!"); 
         else
-            return AlertFail("Orders NOT updated!");  
+            return common.AlertFail("Orders NOT updated!");  
     }       
 })
 ///////////////////////////////////////////////////////////////////////////////btn_monerotest_deposit
@@ -215,13 +196,15 @@ $("#btn_monerotest_deposit").on("click", async e => {
     const mnemonic = $("#wallet_seed").val();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
-        return AlertFail();
+        return common.AlertFail();
 
     const moneroAddress = await txmr.GetAddress(mnemonic);
 
     $("#deposit_address").empty().val(moneroAddress.address);
     $("#priv_view_key").empty().val(moneroAddress.privViewKey);
     $("#priv_spent_key").empty().val(moneroAddress.privSpentKey);
+
+    $("#accordionPrivKeys").show()
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
     g_modal.show();  
@@ -244,9 +227,11 @@ $("#btn_bitcointest_deposit").on("click", e => {
     const mnemonic = $("#wallet_seed").val();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
-        return AlertFail();
+        return common.AlertFail();
 
     $("#deposit_address").empty().val(tbtc.GetAddress(mnemonic).p2pkh.address);
+
+    $("#accordionPrivKeys").hide()
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
     g_modal.show();  
@@ -273,7 +258,7 @@ $("#withdraw_ok").on("click", async e => {
     const mnemonic = $("#wallet_seed").val();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
-        return AlertFail();
+        return common.AlertFail();
 
     if (coin == "tbtc")
     {
@@ -291,7 +276,7 @@ $("#withdraw_ok").on("click", async e => {
     if (coin == "txmr")
     {
         const timer = ShowProgressDialog(() => {
-            AlertFail("Something wrong: timeout");
+            common.AlertFail("Something wrong: timeout");
         });
         const ret = await txmr.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
 
@@ -299,7 +284,7 @@ $("#withdraw_ok").on("click", async e => {
         g_modal.hide();
         $("#id_progress_static").hide();
 
-        if (ret.message) return AlertFail(ret.message);
+        if (ret.message) return common.AlertFail(ret.message);
 
         ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw, ret.fee);
     }
@@ -336,9 +321,9 @@ $("#withdraw_confirm").on("click", async e => {
         const txid = await tbtc.broadcast(rawTX);
 
         if (txid.length > 50)
-            AlertSuccess("txid: "+txid)
+            common.AlertSuccess("txid: "+txid)
         else
-            AlertFail(txid);
+            common.AlertFail(txid);
 
         $("#btn_bitcointest_withdraw").prop('disabled', false);
         $("#btn_bitcointest_withdraw").text("Withdraw");
@@ -347,7 +332,7 @@ $("#withdraw_confirm").on("click", async e => {
     if (coin == "txmr")
     {
         const timer = ShowProgressDialog(() => {
-            AlertFail("Something wrong: timeout");
+            common.AlertFail("Something wrong: timeout");
         });
 
         const tx = await txmr.broadcast(mnemonic, rawTX);
@@ -356,9 +341,9 @@ $("#withdraw_confirm").on("click", async e => {
         g_modal.hide();
         $("#id_progress_static").hide();
 
-        if (!tx.result) return AlertFail(tx.message);
+        if (!tx.result) return common.AlertFail(tx.message);
         
-        return AlertSuccess("txid: "+tx.txid)
+        return common.AlertSuccess("txid: "+tx.txid)
     }
 })
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -366,18 +351,18 @@ $("#withdraw_confirm").on("click", async e => {
 function GetSavedSeedFromPassword(password)
 {
     try {
-        const encryptedSeed = utils.storage.getItem("bitcoin_seed_"+utils.Hash160(password, ""));
+        const encryptedSeed = utils.storage.getItem("bitcoin_seed_"+utils.Hash160(password));
         
         return utils.Decrypt(encryptedSeed, password);
     }
     catch(e) {
-        AlertFail(e.message);
+        common.AlertFail(e.message);
         return "";
     }
 }
 
 let g_offline = false;
-exports.ShowBalances = function(force = true)
+exports.ShowBalances = async function(force = true)
 {
     const connected = p2p.GetConnectedPeers();
     if (!connected.length)
@@ -410,7 +395,8 @@ exports.ShowBalances = function(force = true)
         $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
     })
     
-    txmr.GetBalance(mnemonic, balance => {
+    const addressTXMR = await txmr.GetAddress(mnemonic)
+    txmr.GetBalance(addressTXMR, balance => {
         $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0);
     })
 

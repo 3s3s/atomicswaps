@@ -4,5 +4,6 @@ private.js
 *.db
 *.zip
 *.xpi
-tmp.js
+tmp
 .wallets
+*.log

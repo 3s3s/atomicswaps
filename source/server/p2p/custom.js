@@ -2,6 +2,7 @@
 
 const p2p = require("p2plib");
 const utils = require("../../utils")
+const orders = require("./orders.js")
 
 let g_Callbacks = {};
 
@@ -35,11 +36,16 @@ exports.HandleMessage = async function(message)
     }
 
     if (message.params["command"] == "deleteOrder" && message.params.request && message.params.sign)
-         answer = await utils.DeleteOrderFromDB(message.params)
+        answer = await utils.DeleteOrderFromDB(message.params)
 
     if (message.params["command"] == "refreshOrder" && message.params.request && message.params.sign)
         answer = await utils.RefreshOrderInDB(message.params)
-
+    
+    if (message.params["command"] == "InitBuyOrder" && message.params.request && message.params.sign)
+        answer = await utils.InitBuyOrder(message.params)
+    if (message.params["command"] == "getAdaptorSignatureFromBuyer" && message.params.request && message.params.sign)
+        answer = await orders.getAdaptorSignatureFromBuyer(message.params)
+  
         
     if (answer != null)
     {
@@ -65,6 +71,7 @@ exports.HandleMessage = async function(message)
             require("../../utils").ClientDH_Decrypt(message.params.values) : message.params.values;
 
         g_Callbacks[message.params.destination].callback(values);
+        delete g_Callbacks[message.params.destination];
     }
 
     return FreeMemory();     
@@ -93,7 +100,10 @@ function FreeMemory()
     for (let key in g_Callbacks)
     {
         if (g_Callbacks[key].time < date - 3*60*1000)
+        {
+            g_Callbacks[key].callback();
             continue;
+        }
         tmp[key] = g_Callbacks[key];
     }
     g_Callbacks = tmp;

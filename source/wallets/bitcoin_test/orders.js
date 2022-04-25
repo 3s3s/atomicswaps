@@ -59,7 +59,7 @@ exports.HandleCreateOrder = async function(params)
                 message: "Sell order ("+(order.sell_amount/100000000).toFixed(8)*1+") > Balance ("+(balanceFull/100000000).toFixed(8)*1+")"
             };
 
-        const balanceInOrders = await GetBalanceInOrders(order.p2pkh);
+        const balanceInOrders = await GetBalanceInOrders(order.seller_pubkey);
 
         if (order.sell_amount + balanceInOrders > balanceFull)
             return {
@@ -100,100 +100,4 @@ exports.HandleCreateOrder = async function(params)
 
     return 0;
 }
-
-/*exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, buy_coin = "txmr")
-{
-    const address = tbtc_utils.GetAddress(mnemonic);
-
-    const order = {
-        sell_amount: sell_amount, 
-        buy_amount: buy_amount, 
-        sell_coin: "tbtc", 
-        seller_pubkey: address.p2pkh.hash.toString("hex"),
-        time: Date.now(),
-        buy_coin: buy_coin}
-
-    const sign = utils.SignObject(order, address.privateKey)
-
-    return new Promise(ok => {
-        return customP2P.SendMessage({
-            command: "new_order", 
-            request: sign.message,
-            sign: sign.signature,
-            coin: "tbtc"}, result => 
-        {
-            try { 
-                result["seller_pubkey"] = order.seller_pubkey;
-                return ok( result )
-            }
-            catch(e) { ok({result: false, message: e.message}) }
-        });
-
-    })
-}*/
-
-/*exports.DeleteOrder = function(mnemonic, uid)
-{
-    const address = tbtc_utils.GetAddress(mnemonic);
-
-    const order = {
-        seller_pubkey: address.p2pkh.hash.toString("hex"),
-        uid: uid}
-
-    const sign = utils.SignObject(order, address.privateKey)
-
-    return new Promise(ok => {
-        return customP2P.SendMessage({
-            command: "deleteOrder", 
-            request: sign.message,
-            sign: sign.signature,
-            coin: "tbtc"}, result => 
-        {
-            try { 
-                if (result.result == true)
-                {
-                    utils.DeleteOrderFromDB({uid: uid, sell_coin: "tbtc"})
-                }
-                return ok( result )
-            }
-            catch(e) { ok({result: false, message: e.message}) }
-        });
-
-    })
-}*/
-
-/*exports.RefreshOrder = function(mnemonic, orderOld)
-{
-    const address = tbtc_utils.GetAddress(mnemonic);
-
-    if (orderOld.seller_pubkey != address.p2pkh.hash.toString("hex"))
-        return;
-
-    const order = {
-        sell_amount: orderOld.sell_amount, 
-        buy_amount: orderOld.buy_amount, 
-        sell_coin: orderOld.sell_coin, 
-        seller_pubkey: orderOld.seller_pubkey,
-        time: Date.now(),
-        uid: orderOld.uid,
-        buy_coin: orderOld.buy_coin}
-    
-    const sign = utils.SignObject(order, address.privateKey)
-
-    return new Promise(ok => {
-        return customP2P.SendMessage({
-            command: "refreshOrder", 
-            request: sign.message,
-            sign: sign.signature,
-            coin: orderOld.sell_coin}, result => 
-        {
-            try { 
-                return ok( result )
-            }
-            catch(e) { ok({result: false, message: e.message}) }
-        });
-
-    })
-}
-*/
 

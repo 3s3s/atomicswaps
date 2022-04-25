@@ -29,8 +29,9 @@ exports.Wallet = async function(params)
 
     if (!reqObject || !reqObject.request || !reqObject.params) return null;
 
+    let RPC = false;
     try {
-        const RPC = require("../../private").RPC.txmr || false;
+        RPC = require("../../private").RPC.txmr || false;
         if (!RPC) return ok(null);
     }
     catch(e) {
@@ -65,7 +66,7 @@ exports.Wallet = async function(params)
 
             const height = await daemon.getHeight();   
             
-            let viewOnlyWallet = await monerojs.MoneroWalletFull.walletExists(walletName) ?
+            let viewOnlyWallet = monerojs.MoneroWalletFull.walletExists(walletName) ?
                 await monerojs.openWalletFull({
                     path: walletName,
                     networkType: "stagenet",
@@ -99,7 +100,7 @@ exports.Wallet = async function(params)
                 const outputsHex = await viewOnlyWallet.exportOutputs(true);
                 const balance = await viewOnlyWallet.getBalance();
                 
-                ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex};
+                ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex, address: reqObject.params[0]};
             }
 
             if (reqObject.request == "broadcast")
@@ -151,6 +152,7 @@ exports.Wallet = async function(params)
 
 exports.GetAddress = async function(mnemonic)
 {
+    //return await monero.GetAddressFromString(mnemonic);
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });
     const root = bip32.fromSeed(seed, bitcoin.networks.testnet);
 
@@ -161,19 +163,23 @@ exports.GetAddress = async function(mnemonic)
     return address;
 }
 
-let g_LastUpdated = {time: 0, data: 0};
-exports.GetBalance = function(mnemonic, callback = null)
+let g_LastUpdated = {}; //{time: 0, data: 0};
+exports.GetBalance = function(address, callback = null)
 {
-    if (Date.now() - g_LastUpdated.time < 3*60*1000 && g_LastUpdated.data)
+    if (!address.address) throw new Error("Error: GetBalance called with bar argument")
+
+    if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
     {
-        if (callback) return callback(g_LastUpdated.data)
-        return g_LastUpdated.data;
+        if (callback) return callback(g_LastUpdated[address.address].data)
+        return g_LastUpdated[address.address].data;
     }
 
-    g_LastUpdated.time = Date.now();
+    const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : null
+
+    g_LastUpdated[address.address] = {time: Date.now(), data: data};
 
     return new Promise(async ok => {
-        const address = await exports.GetAddress(mnemonic);
+        //const address = await exports.GetAddress(mnemonic);
 
         const request = utils.ClientDH_Encrypt(JSON.stringify({
                         request: "getBalance",
@@ -189,7 +195,7 @@ exports.GetBalance = function(mnemonic, callback = null)
             try {
                 const ret = JSON.parse(balance)
 
-                g_LastUpdated = {time: Date.now(), data: ret};
+                g_LastUpdated[address.address] = {time: Date.now(), data: ret};
 
                 if (callback) return callback(ret);
                 ok(ret)
@@ -201,14 +207,53 @@ exports.GetBalance = function(mnemonic, callback = null)
     })
 }
 
+exports.refund = async function(address, address_to, amount)
+{
+    /*
+    address = {
+        address: address.GetAddress58(), 
+        privViewKey: sumPrivView, 
+        pubViewKey:  sumPublicView, 
+        privSpentKey: sumPrivSpent,
+        pubSpentKey: sumPublicSpent
+    };
+    */
+   console.log(`will try refund ${amount} tXMR from (${address}) to (${address_to})`)
+    try
+    {
+        const balance = await exports.GetBalance(address);
+
+        if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`, code: 1}
+
+        return await processWithdraw(address, balance, address_to, amount)
+    }
+    catch(e) {
+        console.log(e)
+        return {result: false, message: e.message, code: 2}    
+    }
+
+}
+
+
 exports.withdraw = async function(mnemonic, address_to, amount)
 {
     try {
         const address = await exports.GetAddress(mnemonic);
-        const balance = await exports.GetBalance(mnemonic);
+        const balance = await exports.GetBalance(address);
 
         if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`}
 
+        return await processWithdraw(address, balance, address_to, amount)
+    }
+    catch(e) {
+        console.log(e)
+        return {result: false, message: e.message}
+    }
+}
+
+async function processWithdraw(address, balance, address_to, amount)
+{
+    try{
         // create offline wallet
         let offlineWallet = await monerojs.createWalletFull({
             networkType: "stagenet",

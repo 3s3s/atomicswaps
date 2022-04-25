@@ -15,13 +15,6 @@ exports.clientDHkeys = {
 exports.SQLITE_PATH = __dirname+"/server/sqlite.db";
 
 
-/*const order = {
-    sell_amount: sell_amount, 
-    buy_amount: buy_amount, 
-    sell_coin: "tbtc", 
-    p2pkh: address.p2pkh.hash.toString("hex"),
-    buy_coin: buy_coin}*/
-
 exports.dbTables = [
     {
        'name' : 'orders',

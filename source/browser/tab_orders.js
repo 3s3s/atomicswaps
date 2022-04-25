@@ -1,9 +1,12 @@
 "use strict";
 
 const tbtc_utils = require("../wallets/bitcoin_test/utils")
+const txmr = require("../wallets/monero_test/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
+const common = require("./common")
 const $ = require('jquery');
+
 
 exports.Init = function()
 {
@@ -13,6 +16,40 @@ exports.Init = function()
 
     setInterval(RefreshMyOrders, 60*1000)
 }
+
+function ShowProgressDialog(callback = null)
+{
+    $("#id_orders_progress_static").attr("aria-valuenow", 180);
+    $("#id_orders_progress_static").css("width", "100%");
+    $("#id_orders_progress_static").text("180");
+    $("#id_orders_progress_static").show();
+
+    const now = Date.now();
+
+    const nIntervalID = setInterval(() => {
+
+        const currPos = (180 - (Date.now() - now)/1000);
+
+        if (currPos < 0)
+        {
+            clearInterval(nIntervalID);
+            $("#id_orders_progress_static").hide();
+
+            if (callback) callback();
+            return;
+        }
+
+        const showPos = ((100*currPos)/180).toFixed(0)*1
+
+        $("#id_orders_progress_static").attr("aria-valuenow", currPos);
+        $("#id_orders_progress_static").css("width", showPos+"%");
+        $("#id_orders_progress_static").text(currPos.toFixed(0))
+    
+    }, 1000)
+
+    return nIntervalID;
+}
+
 
 function UpdateOrdersTable()
 {
@@ -25,14 +62,21 @@ function UpdateOrdersTable()
         if (!result || result.result != true || result.sell_coin != sell_coin)
             return;
 
+        const timer = ShowProgressDialog(() => {
+            common.AlertFail("Something wrong: timeout");
+        });
+   
         const currentSavedOrders = await exports.UpdateOrders(result.orders, result.sell_coin)
 
+        clearInterval(timer);
+        $("#id_orders_progress_static").hide();
+ 
         UpdateTable(currentSavedOrders, result.sell_coin);
     });
 
 }
 
-function UpdateTable(currentSavedOrders, sell_coin)
+async function UpdateTable(currentSavedOrders, sell_coin)
 {
     const mnemonic = $("#wallet_seed").val();
 
@@ -44,19 +88,49 @@ function UpdateTable(currentSavedOrders, sell_coin)
 
         const orderUID = currentSavedOrders[key].uid;
 
-        const td1 = $(`<td>${currentSavedOrders[key].seller_pubkey}</td>`)
-        const td2 = $(`<td>${(currentSavedOrders[key].sell_amount / 100000000).toFixed(8)} ${sell_coin}</td>`)
-        const td3 = $(`<td>${(currentSavedOrders[key].buy_amount / (currentSavedOrders[key].sell_amount)).toFixed(8)} ${currentSavedOrders[key].buy_coin}</td>`)
+        const buy_coin = currentSavedOrders[key].buy_coin;
+
+        const buy_amount = currentSavedOrders[key].buy_amount;
+        const sell_amount = currentSavedOrders[key].sell_amount
+
+        const seller_pubkey = currentSavedOrders[key].seller_pubkey;
+
+        const td1 = $(`<td>${seller_pubkey}</td>`)
+        const td2 = $(`<td>${(sell_amount / 100000000).toFixed(8)} ${sell_coin}</td>`)
+        const td3 = $(`<td>${(buy_amount / sell_amount).toFixed(8)} ${buy_coin}</td>`)
         
+        const buttonBuy = $(`<button type="button" class="btn btn-primary btn-sm">Buy</button>`).on("click", async e => {
+            if (! await HaveBalance(mnemonic, buy_coin, buy_amount)) return common.AlertFail("Insufficient funds. Reguired:" + (buy_amount / 100000000).toFixed(8) + " " + buy_coin)
+
+            const ret = await p2p_orders.InitBuyOrder(mnemonic, orderUID, sell_coin, seller_pubkey, sell_amount, buy_amount, buy_coin)          
+
+            if (!ret.result) return common.AlertFail(ret.message)
+            //return {result: true, txFirst: tx, txSecond: txNew}
+
+            if (sell_coin == "tbtc")
+            {
+                //const txid1 = await tbtc_utils.broadcast(ret.txFirst.toHex());
+                //const txid2 = await tbtc_utils.broadcast(ret.txSecond.toHex());
+                alert(ret.txFirst.toHex())
+                alert(ret.txSecond.toHex())
+                
+                alert("ok")
+
+            }
+
+            
+        })
+
         const buttonDelete = $(`<button type="button" class="btn btn-primary btn-sm">Delete</button>`).on("click", e => {
-            p2p_orders.DeleteOrder(mnemonic, orderUID, sell_coin)
+            p2p_orders.DeleteOrder(orderUID, sell_coin)
 
             UpdateOrdersTable();
         })
 
-        const td4 = $("<td></td>")
+        const td4 = $("<td></td>").append(buttonBuy)
 
-        if (tbtc_utils.IsMyPublicKey(mnemonic, currentSavedOrders[key].seller_pubkey))
+        //if (tbtc_utils.IsMyPublicKey(mnemonic, seller_pubkey))
+        if (p2p_orders.getMyOrder(orderUID) != null)
             td4.append(buttonDelete)
 
         const row = $("<tr></tr>").append(td1).append(td2).append(td3).append(td4)
@@ -65,6 +139,22 @@ function UpdateTable(currentSavedOrders, sell_coin)
     }
 
 }
+
+function HaveBalance(mnemonic, buy_coin, buy_amount)
+{
+    return new Promise(async ok => {
+        if (buy_coin == "txmr")
+        {
+            const addressTXMR = await txmr.GetAddress(mnemonic)
+            txmr.GetBalance(addressTXMR, balance => {
+                if (buy_amount / 100000000 >= (balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0) return ok(false)
+                return ok (true)
+            })
+            
+        }
+    })
+}
+
 
 /*exports.dbTables = [
     {
@@ -84,8 +174,6 @@ function UpdateTable(currentSavedOrders, sell_coin)
 
 exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
 {
-    const mnemonic = $("#wallet_seed").val();
-
     let savedOrders = await utils.GetOrdersFromDB(sell_coin);
 
     if (!orders || !orders.length)
@@ -94,16 +182,19 @@ exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
     for (let i=0; i<orders.length; i++)
     {
         const order = orders[i];
-        if (!order["uid"] || !order["json"])
+        if (!order["uid"] || !order["json"] || order["uid"] == "undefined")
             continue;
 
         if (savedOrders[order.uid])
         {
             if (savedOrders[order.uid].active == 1)
+            {
+                savedOrders[order.uid].time = Date.now();
                 continue;
+            }
 
             if (savedOrders[order.uid].active == 0)
-                p2p_orders.DeleteOrder(mnemonic, order.uid, sell_coin)
+                p2p_orders.DeleteOrder(order.uid, sell_coin)
 
             continue;
         }
@@ -122,6 +213,7 @@ exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
 
             savedOrders[order.uid] = _order
             savedOrders[order.uid]["uid"] = order.uid
+            savedOrders[order.uid].time = Date.now();
         }
         catch(e) {
             continue;
@@ -142,12 +234,10 @@ async function RefreshMyOrders()
         $("#id_sell_coin").text("tbtc")
 
     const sell_coin = $("#id_sell_coin").text();
-    const mnemonic = $("#wallet_seed").val();
 
     const savedOrders = await utils.GetOrdersFromDB(sell_coin);
 
     for (let key in savedOrders)
-    {
-        p2p_orders.RefreshOrder(mnemonic, savedOrders[key]);
-    }
-}
+        p2p_orders.RefreshOrder(savedOrders[key].uid);
+ }
+
