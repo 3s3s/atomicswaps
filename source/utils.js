@@ -15,6 +15,7 @@ const secp256k1 = new EC('secp256k1');
 
 const customP2P = require("./server/p2p/custom")
 const p2p_orders = require("./server/p2p/orders")
+const tab_orders = require("./browser/tab_orders")
 const tbtc_utils = require("./wallets/bitcoin_test/utils")
 const sellerBTC = require("./swap/sellerBTC")
 
@@ -111,6 +112,13 @@ exports.ClientDH_Decrypt = function(message)
   return exports.Decrypt(message, password);  
 }
 
+exports.SwapLog = function(text, level)
+{
+  if (typeof window === 'undefined') return;
+
+  tab_orders.SwapLog(text, level);
+}
+
 exports.ServerDH_Encrypt = function(message)
 {
   if (typeof window !== 'undefined') return;
@@ -166,7 +174,11 @@ exports.SignObject = function(object, privateSeed)
   
   sodium.crypto_sign_seed_keypair(pk, sk, privateSeed)
 
-  if (!!object["publicKey"]) throw new Error("SSignObject failed: property publicKey already exist")
+  if (!!object["publicKey"]) 
+  {
+    console.log("Invalid object")
+    throw new Error("SignObject failed: property publicKey already exist")
+  }
 
   object["publicKey"] = pk.toString("hex");
   

@@ -150,6 +150,7 @@ exports.Wallet = async function(params)
     }
 }
 
+let g_LastAddress = null
 exports.GetAddress = async function(mnemonic)
 {
     //return await monero.GetAddressFromString(mnemonic);
@@ -158,9 +159,14 @@ exports.GetAddress = async function(mnemonic)
 
     const privateData = root.derivePath("m/0/0").privateKey.toString("hex");
 
-    const address = await monero.GetAddressFromString(privateData);
+    const address = monero.GetAddressFromString(privateData);
+    g_LastAddress = address;
      
     return address;
+}
+exports.getLastKnownAddress = function()
+{
+    return g_LastAddress;
 }
 
 let g_LastUpdated = {}; //{time: 0, data: 0};
@@ -207,7 +213,7 @@ exports.GetBalance = function(address, callback = null)
     })
 }
 
-exports.refund = async function(address, address_to, amount)
+exports.SendMoney = async function(address, address_to, amount)
 {
     /*
     address = {
@@ -218,22 +224,32 @@ exports.refund = async function(address, address_to, amount)
         pubSpentKey: sumPublicSpent
     };
     */
-   console.log(`will try refund ${amount} tXMR from (${address}) to (${address_to})`)
+    console.log(`will try send ${amount} tXMR from (${address}) to (${address_to})`)
     try
     {
         const balance = await exports.GetBalance(address);
 
         if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`, code: 1}
 
-        return await processWithdraw(address, balance, address_to, amount)
+        const ret = await processWithdraw(address, balance, address_to, amount)
+        //If success ret = {result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee, raw: signedTxHex}
+
+        if (!ret.result)
+            return ret;
+
+        return await exports.broadcast(null, ret.raw, address)
+        //ok({result: true, txid: txid[0]});
+
     }
     catch(e) {
         console.log(e)
+
+        utils.SwapLog(e.message, "e")
+
         return {result: false, message: e.message, code: 2}    
     }
 
 }
-
 
 exports.withdraw = async function(mnemonic, address_to, amount)
 {
@@ -247,6 +263,9 @@ exports.withdraw = async function(mnemonic, address_to, amount)
     }
     catch(e) {
         console.log(e)
+
+        utils.SwapLog(e.message, "e")
+
         return {result: false, message: e.message}
     }
 }
@@ -288,7 +307,7 @@ async function processWithdraw(address, balance, address_to, amount)
                 try {
                     const unsignedTx = JSON.parse(result)
 
-                    if (!!unsignedTx.message) throw new Error(unsignedTx.message)
+                    if (!!unsignedTx.message) return ok({result: false, message: unsignedTx.message})
 
                     // describe unsigned tx set to confirm details
                     //const describedTxSet = await offlineWallet.describeTxSet(unsignedTx.getTxSet());
@@ -302,20 +321,26 @@ async function processWithdraw(address, balance, address_to, amount)
                 }
                 catch(e) {
                     console.log(e)
-                    ok({result: false, message: e.message})
+
+                    utils.SwapLog(e.message, "e")
+
+                    return ok({result: false, message: e.message})
                 }
             });   
         });
     }
     catch(e) {
         console.log(e)
+
+        utils.SwapLog(e.message, "e")
+
         return {result: false, message: e.message}
     }
 }
 
-exports.broadcast = async function(mnemonic, signedTxHex)
+exports.broadcast = async function(mnemonic, signedTxHex, addrObject = null)
 {
-    const address = await exports.GetAddress(mnemonic);
+    const address = !addrObject ? await exports.GetAddress(mnemonic) : addrObject;
 
     const request = utils.ClientDH_Encrypt(JSON.stringify({
         request: "broadcast",
@@ -332,12 +357,15 @@ exports.broadcast = async function(mnemonic, signedTxHex)
             try {
                 const txid = JSON.parse(result)
 
-                if (!!txid.message) throw new Error(txid.message)
+                if (!!txid.message) return ok({result: false, message: txid.message})
 
                 return ok({result: true, txid: txid[0]});
             }
             catch(e) {
                 console.log(e)
+
+                utils.SwapLog(e.message, "e")
+
                 ok({result: false, message: e.message})
             }
         });   

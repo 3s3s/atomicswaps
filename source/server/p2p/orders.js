@@ -147,6 +147,8 @@ let g_Swaps = {}
 
 exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubkey, sell_amount, buy_amount, buy_coin)
 {
+    utils.SwapLog(`Init order: ${sell_coin} <=> ${buy_coin}`, "b")
+    
     const orderMnemonic = utils.Hash160(mnemonic+orderUID);
 
     if (!!g_Swaps[orderMnemonic]) return {result: false, message: "The order is already init"}
@@ -171,9 +173,9 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
 
     let addressXMR = null;
     if (monero.getNetwork() == 24)
-        addressXMR = (await txmr_utils.GetAddress(mnemonic)).address
+        addressXMR = (await txmr_utils.GetAddress(mnemonic))
     if (monero.getNetwork() == 0x12)
-        addressXMR = (await xmr_utils.GetAddress(mnemonic)).address
+        addressXMR = (await xmr_utils.GetAddress(mnemonic))
 
     if (!addressXMR)
         return {result: false, message: "XMR network undefined"}
@@ -254,4 +256,31 @@ exports.getAdaptorSignatureFromBuyer = function(params)
       console.log(e);
       return null;
   }
+}
+
+exports.getSwapTransactionFromBuyer = function(params)
+{
+    try {
+        const check = utils.VerifySignature(params.request, params.sign)
+        if (!check)
+            return {result: false, message: "Signature error"};
+    
+        let _order = JSON.parse(params.request);
+        _order["request"] = params.request;
+        _order["sign"] = params.sign;
+    
+        const infoAdaptor = _order;
+    
+        if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
+    
+        if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
+          return buyerBTC.getSwapTransactionFromBuyer(infoAdaptor, g_Swaps[params.swapID]);
+    
+        return {result: true};
+      }
+      catch(e) {
+          console.log(e);
+          return null;
+      }
+    
 }

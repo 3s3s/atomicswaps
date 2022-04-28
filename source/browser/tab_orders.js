@@ -241,3 +241,18 @@ async function RefreshMyOrders()
         p2p_orders.RefreshOrder(savedOrders[key].uid);
  }
 
+exports.SwapLog = function(text, level)
+{
+    let color = "text-primary";
+    if (level == "s")
+        color = "text-success"
+    if (level == "e")
+        color = "text-danger"
+    if (level == "i")
+        color = ".text-info"
+    
+    const logTD = $(`<td><span class="${color}">${text}</span></td>`)
+
+    $("#table_swaps_log_body").append($("<tr></tr>").append(logTD))
+}
+

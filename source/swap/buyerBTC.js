@@ -16,6 +16,60 @@ const secp256k1 = new EC('secp256k1');
 
 let g_Transactions = {}
 
+exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
+{
+    /*
+    const infoSeller = {
+        infoSecret: infoSecret
+    }
+
+    */
+
+    try {
+        const network = common.NETWORK[swapInfo.swapInfoBuyer.sell_coin];
+        
+        if (!g_Transactions[swapInfo.swapInfoBuyer.swapID])
+            return {result: false, message: "Error: Swap not found. (got invalid swapId from seller)"}
+
+        const ctx = g_Transactions[swapInfo.swapInfoBuyer.swapID];
+ 
+        utils.SwapLog(`Received secret from seller. Try to get ${swapInfo.swapInfoBuyer.sell_coin} from first transaction`, "b")
+
+        //////////////////////////////////////////////////
+        ///////Sign and compile Sell Transaction/////////////////////////
+        
+        const redeemScriptSig = bitcoin.payments.p2sh({
+            network: network,
+            redeem: {
+                network: network,
+                input: bitcoin.script.compile([
+                    ctx.signatureSell, 
+                    Buffer.from(infoSeller.infoSecret),
+                    bitcoin.opcodes.OP_TRUE
+                ]),
+                output: ctx.redeemScript.redeem.output
+            },
+        }).input;
+
+        ctx.sellTx.setInputScript(0, redeemScriptSig);
+        
+        const txid = await common.broadcast(ctx.sellTx.toHex(), ctx.sell_coin)
+
+        if (txid.length > 50)
+        {
+            utils.SwapLog(`Sent Sell transaction for BTC: ${txid}`, "b")
+    
+            return {result: true, txid: txid}; 
+        }
+        return {result: true, message: "Transaction is not sent. Something wrong on the Buyer side."};
+    
+    }
+    catch(e) {
+        return {result: false, message: e.message}
+    }
+    return {result: false, message: "Error: something wrong on the Buyer side"}
+}
+
 exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
 {
 /*
@@ -46,6 +100,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
         pubSellerSpentKey: orderSeller.swapContext.getSpentPair().pub,  //public spent XMR key: t_1 M
         privSellerViewKey: orderSeller.swapContext.getViewPair().priv, //private view XMR key: v_1
         sharedMoneroAddress: sharedMoneroAddress,
+        hashSecret: hashSecret,
         DLEQ: {s: keys.s, c: keys.c}
     }
     sellerDLEQ["signatureHash_refund"] = signatureHash_refund.toString("hex");
@@ -57,6 +112,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
         s: s.toString("hex"), c: c.toString("hex")}
 
 */
+
     const network = common.NETWORK[swapInfo.swapInfoBuyer.sell_coin];
 
     ///////////CHECK DLEQ////////////////////////////
@@ -81,6 +137,12 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
     )
 
     if (sharedMoneroAddress.address != sellerDLEQ.sharedMoneroAddress) throw new Error("Error at buyer side: shared XMR address mismatch!")
+
+    if (sellerDLEQ["failedCounter"]*1 == 0)
+    {
+        utils.SwapLog(`Generate buyer signatures`, "b")
+        utils.SwapLog(`Shared monero address: ${sharedMoneroAddress.address}`, "b")
+    }
     ////DEBUG CHECK XMR SPENT ADDRESS////////////
     /*const checkAddress = monero.GetAddressFromPrivateKeysAB(
         swapInfo.swapInfoBuyer.privBuyerViewKey, swapInfo.getSpentPair().priv, 
@@ -96,6 +158,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
 
     const redeemScript = common.GetP2SH(
         swapInfo.swapInfoBuyer.publicGetBTC, sellerDLEQ.publicRefundBTC,  //for signatures
+        sellerDLEQ.hashSecret,
         network
     );    
 
@@ -119,11 +182,13 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
 
         /////////CHECK ADAPTOR SIGNATURE//////////////////////////////       
         
-        /*const t2 = new BN(swapInfo.getSpentPair().priv, "hex", "le"); //Buyer private adaptor
+        const t2 = new BN(swapInfo.getSpentPair().priv, "hex", "le"); //Buyer private adaptor
         const rT_x = new BN(sellerDLEQ["signatureAdaptorPart"].substring(0, 64), "hex");
 
         const s_adaptor = new BN(sellerDLEQ["signatureAdaptorPart"].substring(64), "hex").mul(t2.invm(secp256k1.curve.n)).umod(secp256k1.curve.n)
-       
+        if (s_adaptor.gt(secp256k1.curve.n.div(new BN(2)))) 
+            return {result: false, message: "Seller sent invalid S value for bitcoin transaction!"}
+   
         const sig_a = Buffer.alloc(64);
         rT_x.toArrayLike(Buffer).copy(sig_a)        
         s_adaptor.toArrayLike(Buffer).copy(sig_a, 32)
@@ -132,13 +197,14 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
         
         const checked = ecPair.verify(signatureHash_sell, sig_a)
 
-        if (!checked) throw new Error("Seller sent invalid adaptor signature for sell transaction!")*/
+        if (!checked) 
+            return {result: false, message: "Seller sent invalid adaptor signature for sell transaction!"}
 
         //////////////////////////////////////////////////
         ///////Sign and compile Sell Transaction/////////////////////////
-        /*const signature = bitcoin.script.signature.encode(sig_a, bitcoin.Transaction.SIGHASH_ALL);
+        const signatureSell = bitcoin.script.signature.encode(sig_a, bitcoin.Transaction.SIGHASH_ALL);
 
-        const redeemScriptSig = bitcoin.payments.p2sh({
+        /*const redeemScriptSig = bitcoin.payments.p2sh({
             network: network,
             redeem: {
                 network: network,
@@ -189,6 +255,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
             pubBuyerSpentKey: swapInfo.getSpentPair().pub,
             privSellerViewKey: sellerDLEQ.privSellerViewKey,
             privSellerSpentKey: null, //wait the adaptor (t1) from signed refund transaction t1 = orderSeller.swapContext.getSpentPair().priv
+            hashSecret: sellerDLEQ.hashSecret,
             //t1: sellerDLEQ.t1
         }
 
@@ -198,8 +265,10 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
             buy_amount: swapInfo.swapInfoBuyer.buy_amount,
             publicRefundBTC: sellerDLEQ.publicRefundBTC, //public key for refund
             publicRefundAddress: sellerDLEQ.publicRefundAddress, //address for refund BTC
-            sell: txs.sellTx, //uncomplete sell transaction
+            sellTx: txs.sellTx, //uncomplete sell transaction
+            signatureSell: signatureSell, //signature for sell transaction
             cancel: txs.cancel, //signed cancel transaction
+            redeemScript: redeemScript,
             t2: swapInfo.getSpentPair().priv, //Buyer private adaptor
             adaptor_context: adaptor_context,
             time: Date.now()
@@ -214,6 +283,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
         }
     }
     catch(e) {
+        utils.SwapLog(e.message, "e")
         return {result: false, message: e.message}
     }
 
@@ -242,10 +312,12 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
         pubBuyerSpentKey: new BN(g_Swaps[orderMnemonic].getSpentPair().pub, "hex", "le").toString("hex"),  //public spent XMR key: t_2 M
         addressBuyerBTC: addressBuyerBTC.p2pkh.address,
         publicGetBTC: addressBuyerBTC.publicKey, //P_2
-        DLEQ: {pubBTC_y: keys.pubBTC_y, pubXMR_x: keys.pubXMR_x, s: keys.s, c: keys.c}
+        DLEQ: {s: keys.s, c: keys.c}
     }
     
 */
+    utils.SwapLog(`Start processing buy order`, "b")
+
     const network = common.NETWORK[swapInfoBuyer.sell_coin];
 
     if (!swapInfoBuyer.swapID || !g_Transactions[swapInfoBuyer.swapID]) throw new Error("Error: buyer got bad data from seller (swap not found)")
@@ -258,6 +330,7 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
     {   
         const redeemScript = common.GetP2SH(
             swapInfoBuyer.publicGetBTC, txs.publicRefundBTC,  //for signatures
+            txs.adaptor_context.hashSecret,
             network
         );    
         
@@ -292,30 +365,53 @@ async function WaitConfirmation(txFirst, swapID, refundXMR)
             buy_amount: swapInfo.swapInfoBuyer.buy_amount,
             publicRefundBTC: sellerDLEQ.publicRefundBTC, //public key for refund
             publicRefundAddress: sellerDLEQ.publicRefundAddress, //address for refund BTC
-            sell: txs.sellTx, //uncomplete sell transaction
+            sellTx: txs.sellTx, //uncomplete sell transaction
             cancel: txs.cancel, //signed cancel transaction
             t2: swapInfo.getSpentPair().priv, //Buyer private adaptor
             adaptor_context: adaptor_context,
             time: Date.now()
         };
     */
-    const coin = g_Transactions[swapID].sell_coin;
+    const sell_coin = g_Transactions[swapID].sell_coin;
+    const buy_coin = g_Transactions[swapID].buy_coin;
+    const buy_amount = g_Transactions[swapID].buy_amount;
+    const ctx = g_Transactions[swapID].adaptor_context;
 
+    utils.SwapLog("Wait confirmation for the first BTC transaction: "+txFirst.getHash().reverse().toString("hex"), "b")
     console.log("WaitTransaction "+txFirst.getHash().reverse().toString("hex"));
 
-    common.WaitTransaction(txFirst, coin, ret => {
+    common.WaitTransaction(txFirst, sell_coin, async ret => {
         if (!ret.result)
             return console.log(ret.message);
 
-        //Transaction confirmed
-        setTimeout(WaitRefund, 1000, txFirst, swapID, refundXMR)
+        //Transaction confirmed so buyer send his coins (xmr) to seller
+        if (buy_coin == "txmr")
+        {
+            utils.SwapLog(`Try to send ${buy_amount/100000000} txmr to address ${ctx.sharedMoneroAddress}`, "b")
+            
+            const ret = await txmr.SendMoney(refundXMR, ctx.sharedMoneroAddress, buy_amount/100000000);
+            //ok({result: true, txid: txid[0]});
+
+            if (ret.result == false)
+                utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "b")
+            else
+                utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "b")
+
+            /*if (!ret || ret.code == 1) //Not enough funds
+            {
+                bNeedRefund = false;
+                console.log(ret.message);
+            }
+            if (ret && ret.result == true)
+            {
+                const ret2 = txmr
+            }*/
+        }
+
+        setTimeout(WaitRefund, 1000, txFirst, swapID, refundXMR.address)
 
         setTimeout(getCancel, 1000*60*10, swapID)
 
-        //broadcast XMR
-        //wait adaptor or refund or time_cancel
-        //getBTC or gerXMR
-        //SendXMR(swapID)
     })
 }
 
@@ -329,7 +425,7 @@ async function WaitRefund(txFirst, swapID, refundXMR)
             buy_amount: swapInfo.swapInfoBuyer.buy_amount,
             publicRefundBTC: sellerDLEQ.publicRefundBTC, //public key for refund
             publicRefundAddress: sellerDLEQ.publicRefundAddress, //address for refund BTC
-            sell: txs.sellTx, //uncomplete sell transaction
+            sellTx: txs.sellTx, //uncomplete sell transaction
             cancel: txs.cancel, //signed cancel transaction
             t2: swapInfo.getSpentPair().priv, //Buyer private adaptor
             adaptor_context: adaptor_context,
@@ -345,16 +441,19 @@ async function WaitRefund(txFirst, swapID, refundXMR)
         }
 
     */
+    if (!g_Transactions[swapID])
+        return;
+        
     const coin = g_Transactions[swapID].sell_coin;
 
     const check = await common.CheckSpent(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), txFirst.getHash().toString("hex"), coin)
 
     if (!check.result || !check.spent)
-        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID) //not spent
+        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID, refundXMR) //not spent
  
     const check2 = await common.GetHistory(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), coin)
     if (!check2.result || !check2.txs.length)
-        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID) //not spent
+        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID, refundXMR) //not spent
 
     console.log("Seems refunded "+txFirst.getHash().reverse().toString("hex"));
 
@@ -368,7 +467,7 @@ async function WaitRefund(txFirst, swapID, refundXMR)
     }
 
     if (txs.length <= 1)
-        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID) //seems not refunded yet
+        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID, refundXMR) //seems not refunded yet
     
     //Seems Got REFUND!
 
@@ -378,7 +477,7 @@ async function WaitRefund(txFirst, swapID, refundXMR)
             const sig = await common.GetSignatureFromTX(txs[i], coin)
             
             if (!sig) 
-                return setTimeout(WaitRefund, 1000*60, txFirst, swapID) //something wrong
+                continue;
 
             const signature = new BN(sig.toString("hex").substring(64), "hex").invm(secp256k1.curve.n);
 
@@ -390,36 +489,28 @@ async function WaitRefund(txFirst, swapID, refundXMR)
                 ctx.privBuyerViewKey, ctx.privBuyerSpentKey, 
                 ctx.privSellerViewKey, privSellerSpentKey.toString("hex")) //, ctx.pubBuyerSpentKey, ctx.pubSellerSpentKey)
 
-            if (checkAddress.address != ctx.sharedMoneroAddress) throw new Error("Error check address XMR")
+            if (checkAddress.address != ctx.sharedMoneroAddress) 
+                continue;
 
-            return RefundMonero(checkAddress, refundXMR, g_Transactions[swapID].buy_amount, g_Transactions[swapID].buy_coin)
+            utils.SwapLog(`Try refund ${(refund_amount/100000000)} txmr to address ${refundAddress}`, "b")
+            
+            const ret = await common.RefundMonero(checkAddress, refundXMR, g_Transactions[swapID].buy_amount, g_Transactions[swapID].buy_coin)
+            
+            if (!ret || !ret.result) //Try get refund until success
+                return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID, refundXMR)
+
+            utils.SwapLog(`Refund success! ${(refund_amount/100000000)} txmr to address ${refundAddress}`, "b")
+
+            if (!!g_Transactions[swapID]) delete g_Transactions[swapID];
+
+            break;
         }
     }
     catch(e) {
         console.log(e)
-        return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID)
+        utils.SwapLog(e.message, "b")
     }
-}
-
-function RefundMonero(address, refundAddress, amount, coin)
-{
-    /*
-    address = {
-        address: address.GetAddress58(), 
-        privViewKey: sumPrivView, 
-        pubViewKey:  sumPublicView, 
-        privSpentKey: sumPrivSpent,
-        pubSpentKey: sumPublicSpent
-    };
-    */
-
-    if (coin == "txmr")
-    {
-        const ret = txmr.refund(address, refundAddress, amount)
-        if (!ret && ret.code == 1) //Not enough funds
-            return setTimeout(RefundMonero, 1000*60*5, address, refundAddress, amount, coin)
-    }
-
+    return setTimeout(WaitRefund, 1000*60*5, txFirst, swapID)
 }
 
 async function getCancel (swapID)
@@ -429,7 +520,7 @@ async function getCancel (swapID)
             sell_coin: swapInfo.swapInfoBuyer.sell_coin,
             publicRefundBTC: sellerDLEQ.publicRefundBTC, //public key for refund
             publicRefundAddress: sellerDLEQ.publicRefundAddress, //address for refund BTC
-            sell: txs.sellTx, //uncomplete sell transaction
+            sellTx: txs.sellTx, //uncomplete sell transaction
             cancel: txs.cancel, //signed cancel transaction
             t2: swapInfo.getSpentPair().priv, //Buyer private adaptor
             adaptor_context: adaptor_context,
@@ -439,13 +530,19 @@ async function getCancel (swapID)
 */  
     if (!g_Transactions[swapID])
         return;
+    
+    utils.SwapLog(`Try to cancel the BTC transaction`, "b")
         
     const ctx = g_Transactions[swapID];
 
     const txid = await common.broadcast(ctx.cancel.toHex(), ctx.sell_coin)
 
     if (txid.length > 50)
+    {
+        utils.SwapLog(`Sent Cancel transaction for BTC: ${txid}`, "b")
+
         return; //Cancelation done!
+    }
 
     setTimeout(getCancel, 1000*60*5, swapID)
 

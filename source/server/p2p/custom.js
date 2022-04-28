@@ -45,6 +45,8 @@ exports.HandleMessage = async function(message)
         answer = await utils.InitBuyOrder(message.params)
     if (message.params["command"] == "getAdaptorSignatureFromBuyer" && message.params.request && message.params.sign)
         answer = await orders.getAdaptorSignatureFromBuyer(message.params)
+    if (message.params["command"] == "getSwapTransactionFromBuyer" && message.params.request && message.params.sign)
+        answer = await orders.getSwapTransactionFromBuyer(message.params)
   
         
     if (answer != null)

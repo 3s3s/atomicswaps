@@ -3,6 +3,7 @@ const utils = require("../utils")
 const g_constants = require("../constants")
 const customP2P = require("../server/p2p/custom")
 const tbtc_utils = require("../wallets/bitcoin_test/utils")
+const txmr_utils = require("../wallets/monero_test/utils")
 
 const bip68 = require('bip68');
 const bitcoin = require("bitcoinjs-lib")
@@ -140,7 +141,7 @@ exports.SELL_SEQUENCE = bip68.encode({ blocks: 1 });
 exports.REFUND_SEQUENCE = bip68.encode({ blocks: 1 });
 exports.CANCEL_SEQUENCE = bip68.encode({ blocks: 1 });
 
-function GetRedeemScript(publicGetBTC, publicRefundBTC)
+function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
 {
     // 2 blocks from now
     const sequence2 = exports.SELL_SEQUENCE;
@@ -176,7 +177,10 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC)
             bitcoin.script.number.encode(sequence2),
             bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
             bitcoin.opcodes.OP_DROP,
-            Buffer.from(publicGetBTC, "hex"),
+            bitcoin.opcodes.OP_RIPEMD160,
+            Buffer.from(hashSecret, "hex"),
+            bitcoin.opcodes.OP_EQUALVERIFY,
+            Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
             bitcoin.opcodes.OP_CHECKSIG,
         bitcoin.opcodes.OP_ELSE,
             bitcoin.opcodes.OP_IF,
@@ -184,14 +188,14 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC)
                 bitcoin.script.number.encode(sequence4),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
-                Buffer.from(publicRefundBTC, "hex"),
+                Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
                 bitcoin.opcodes.OP_CHECKSIG,
             bitcoin.opcodes.OP_ELSE,
             //Cancel script (BTC move to buyer when seller not responce)
                 bitcoin.script.number.encode(sequence6),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
-                Buffer.from(publicGetBTC, "hex"),
+                Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
                 bitcoin.opcodes.OP_CHECKSIG,
             bitcoin.opcodes.OP_ENDIF,
         bitcoin.opcodes.OP_ENDIF
@@ -200,9 +204,9 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC)
     return redeemScript;
 }
 
-exports.GetP2SH = function(publicGetBTC, publicRefundBTC, network)
+exports.GetP2SH = function(publicGetBTC, publicRefundBTC, hashSecret, network)
 {
-    const redeemScript = GetRedeemScript(publicGetBTC, publicRefundBTC)
+    const redeemScript = GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
     return bitcoin.payments.p2sh({ redeem: { output: redeemScript, network: network }, network: network });
 }
 
@@ -248,20 +252,25 @@ exports.GetTransaction = function(hash, coin, callback)
 
 exports.WaitTransaction = async function(tx, coin, callback)
 {
-    const history = await exports.GetHistory(utils.Hash256(tx.outs[1].script.toString("hex"), "hex", true), coin)
+    try {
+        const history = await exports.GetHistory(utils.Hash256(tx.outs[1].script.toString("hex"), "hex", true), coin)
 
-    if (!history.result || !history.txs.length)
-        return setTimeout(exports.WaitTransaction, 1000*60*5, tx, confirmations, coin) 
+        if (!history.result || !history.txs.length)
+            return setTimeout(exports.WaitTransaction, 1000*60*1, tx, coin, callback) 
 
-    for (let i=0; i<history.txs.length; i++)
-    {
-        if (history.txs[i].tx_hash == tx.getHash().reverse().toString("hex"))
+        for (let i=0; i<history.txs.length; i++)
         {
-            if (history.txs[i].height != 0)
-                return callback({result: true, height: history.txs[i].height})
+            if (history.txs[i].tx_hash == tx.getHash().reverse().toString("hex"))
+            {
+                if (history.txs[i].height != 0)
+                    return callback({result: true, height: history.txs[i].height})
+            }
         }
+        setTimeout(exports.WaitTransaction, 1000*60*1, tx, coin, callback)
     }
-    setTimeout(exports.WaitTransaction, 1000*60*5, tx, coin, callback)
+    catch(e) {
+        return callback({result: false, message: e.message})
+    }
 }
 
 exports.GetHistory = function(scriptpubkey, coin)
@@ -338,5 +347,37 @@ exports.GetSignatureFromTX = function(txHash, coin)
             return ok(sig)
         })
     })
+}
+
+exports.RefundMonero = function(address, refundAddress, amount, coin)
+{
+    /*
+    address = {
+        address: address.GetAddress58(), 
+        privViewKey: sumPrivView, 
+        pubViewKey:  sumPublicView, 
+        privSpentKey: sumPrivSpent,
+        pubSpentKey: sumPublicSpent
+    };
+    */
+
+    return new Promise(async ok => {
+        if (coin == "txmr")
+        {
+            const fee = 0.001*100000000;
+            const refund_amount = amount - fee;
+
+            const ret = await txmr_utils.SendMoney(address, refundAddress, refund_amount/100000000);
+            if (ret.result == false)
+                utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "e")
+            else
+                utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "i")
+
+            return ok(ret)
+        }
+        return ok({result: false, code: 2, message: "RefundMonero error: Unsupported"})
+   })
+
+
 }
 
