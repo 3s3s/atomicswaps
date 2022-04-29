@@ -226,7 +226,7 @@ exports.broadcast = async function(rawTX, coin, debug = true)
     //if (coin == "tbtc" && !debug)
     //    return await tbtc_utils.broadcast(rawTX)
 
-    if (debug)
+    //if (debug)
         alert(rawTX)
 
     return "0";
