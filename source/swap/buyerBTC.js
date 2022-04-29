@@ -25,8 +25,8 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
 
     */
 
-    if (!!g_Transactions[swapID]["seller_refund"])
-        return {result: false, message: "SwapID not found. Seems complete", code: 0};
+    if (!!g_Transactions[swapInfo.swapInfoBuyer.swapID]["seller_refund"])
+        return {result: false, message: "SwapID not found.", code: 0};
 
     try {
         const network = common.NETWORK[swapInfo.swapInfoBuyer.sell_coin];
