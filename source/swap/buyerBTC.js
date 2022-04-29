@@ -47,7 +47,7 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
                 input: bitcoin.script.compile([
                     bitcoin.opcodes.OP_0,
                     ctx.signatureSell, 
-                    //signatureBuyer,
+                    signatureBuyer,
                     Buffer.from(infoSeller.infoSecret),
                     bitcoin.opcodes.OP_TRUE
                 ]),
