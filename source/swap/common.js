@@ -138,8 +138,8 @@ exports.CreateAtaptorSignature_check = function(hash256_hex, privateKey, T_point
 }*/
 
 exports.SELL_SEQUENCE = bip68.encode({ blocks: 1 });
-exports.REFUND_SEQUENCE = bip68.encode({ blocks: 1 });
-exports.CANCEL_SEQUENCE = bip68.encode({ blocks: 1 });
+exports.REFUND_SEQUENCE = bip68.encode({ blocks: 4 });
+exports.CANCEL_SEQUENCE = bip68.encode({ blocks: 8 });
 
 function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
 {
@@ -149,8 +149,8 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
     // 4 blocks from now
     const sequence4 = exports.REFUND_SEQUENCE;
 
-    // 6 blocks from now
-    const sequence6 = exports.CANCEL_SEQUENCE;
+    // 8 blocks from now
+    const sequence8 = exports.CANCEL_SEQUENCE;
 
     const redeemScript = bitcoin.script.compile([
         bitcoin.opcodes.OP_IF,
@@ -179,7 +179,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.opcodes.OP_CHECKMULTISIG,
             bitcoin.opcodes.OP_ELSE,
             //Cancel script (BTC move to buyer when seller not responce)
-                bitcoin.script.number.encode(sequence6),
+                bitcoin.script.number.encode(sequence8),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
                 Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key

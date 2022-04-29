@@ -483,7 +483,7 @@ async function getRefund (swapID)
 
     if (txid.length > 50)
     {
-        utils.SwapLog(`Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}`, "s")
+        utils.SwapLog(`Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}<br>***Swap complete***`, "s")
 
         if (!!g_Transactions[swapID])
             delete g_Transactions[swapID];

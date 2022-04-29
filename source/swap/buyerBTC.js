@@ -26,7 +26,7 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
     */
 
     if (!!g_Transactions[swapID]["seller_refund"])
-        return;
+        return {result: false, message: "SwapID not found. Seems complete", code: 0};
 
     try {
         const network = common.NETWORK[swapInfo.swapInfoBuyer.sell_coin];
@@ -64,7 +64,7 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
 
         if (txid.length > 50)
         {
-            utils.SwapLog(`Success swap for ${ctx.sell_coin}! txid: ${txid}`, "b")
+            utils.SwapLog(`Success swap for ${ctx.sell_coin}! txid: ${txid}<br>***Swap complete***`, "b")
 
             if (g_Transactions[swapInfo.swapInfoBuyer.swapID])
                 delete g_Transactions[swapInfo.swapInfoBuyer.swapID];
@@ -533,7 +533,7 @@ async function WaitRefund(txFirst, swapID, refundXMR)
                 return setTimeout(WaitRefund, 1000*60*10, txFirst, swapID, refundXMR)
             }
 
-            utils.SwapLog(`Refund success! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}`, "b")
+            utils.SwapLog(`Refund success! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}<br>***Swap complete***`, "b")
 
             if (!!g_Transactions[swapID]) delete g_Transactions[swapID];
 
@@ -576,7 +576,7 @@ async function getCancel (swapID)
 
     if (txid.length > 50)
     {
-        utils.SwapLog(`Sent Cancel transaction for BTC: ${txid}`, "b")
+        utils.SwapLog(`Sent Cancel transaction for BTC: ${txid}<br>***Swap complete***`, "b")
 
         if (!!g_Transactions[swapID])
             delete g_Transactions[swapID];
