@@ -304,7 +304,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
 }
 
 //Processing by buyer (buy BTC, sell XMR)
-exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
+exports.ProcessBuyOrder = async function(result, swapInfoBuyer, refundXMR)
 {
 /*
     result = {
@@ -361,7 +361,7 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
             return {result: false, message: "Bad transaction from seller redeemScript failed"}
         
         //First transaction is checked
-        const txid = common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
+        const txid = await common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
 
         utils.SwapLog(`First (${swapInfoBuyer.sell_coin}) transaction was sent. txid: ${txid}`, "b")
         

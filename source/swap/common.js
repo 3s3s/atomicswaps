@@ -180,8 +180,8 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
             bitcoin.opcodes.OP_RIPEMD160,
             Buffer.from(hashSecret, "hex"),
             bitcoin.opcodes.OP_EQUALVERIFY,
-            bitcoin.opcodes.OP_2,
-            Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
+            bitcoin.opcodes.OP_1,
+            Buffer.from(publicRefundBTC, "hex"), //must be signed with buyers private key
             Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
             bitcoin.opcodes.OP_2,
             bitcoin.opcodes.OP_CHECKMULTISIG,
@@ -191,9 +191,9 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.script.number.encode(sequence4),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
-                bitcoin.opcodes.OP_2,
+                bitcoin.opcodes.OP_1,
                 Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
-                Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
+                Buffer.from(publicGetBTC, "hex"), //must be signed with sellers private key
                 bitcoin.opcodes.OP_2,
                 bitcoin.opcodes.OP_CHECKMULTISIG,
             bitcoin.opcodes.OP_ELSE,
@@ -221,6 +221,7 @@ function GetP2WSH(keyPair, network)
     return bitcoin.payments.p2wsh({ redeem: { output: GetRedeemScript(keyPair), network: network }, network: network });
 }
 
+
 exports.broadcast = async function(rawTX, coin, debug = true)
 {
     if (coin == "tbtc" && !debug)
@@ -229,7 +230,7 @@ exports.broadcast = async function(rawTX, coin, debug = true)
     if (debug)
         alert(rawTX)
 
-    return 0;
+    return "";
 }
 
 exports.GetTransaction = function(hash, coin, callback)

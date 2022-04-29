@@ -168,7 +168,7 @@ exports.broadcast = function(rawTX)
                 request: request,
                 coin: "tbtc"}, ret => 
         {  
-            ok(ret);
+            return ok(ret);
         })
     })
 }

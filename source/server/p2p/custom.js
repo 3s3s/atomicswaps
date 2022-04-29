@@ -103,7 +103,7 @@ function FreeMemory()
     {
         if (g_Callbacks[key].time < date - 3*60*1000)
         {
-            g_Callbacks[key].callback();
+            g_Callbacks[key].callback({__result__: false, __message__: "p2plib timeout"});
             continue;
         }
         tmp[key] = g_Callbacks[key];
