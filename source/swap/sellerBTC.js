@@ -406,14 +406,14 @@ async function getRefundAndSellTransactions(firstTransaction, redeemScript, orde
         const signature = bitcoin.script.signature.encode(sig_a, bitcoin.Transaction.SIGHASH_ALL);
 
         const ecPair = multicoin.ECPair.fromPrivateKey(orderSeller.addressBTC.privateKey, { network: network })
-        const signatureSeller = bitcoin.script.signature.encode(ecPair.sign(signatureHash_refund), bitcoin.Transaction.SIGHASH_ALL)        
-
+        const signatureSeller = bitcoin.script.signature.encode(ecPair.sign(signatureHash_refund), bitcoin.Transaction.SIGHASH_ALL)   
+        
         const redeemScriptSig = bitcoin.payments.p2sh({
             network: network,
             redeem: {
                 network: network,
                 input: bitcoin.script.compile([
-                    //bitcoin.opcodes.OP_0,
+                    bitcoin.opcodes.OP_0,
                     //signatureSeller,
                     signature, //signature for P2 (buyer publicGetBTC) public key
                     bitcoin.opcodes.OP_TRUE,
@@ -487,8 +487,8 @@ async function getRefund (swapID)
         return; //Refund done
     }
 
-    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 1 min`, "s")
-    setTimeout(getRefund, 1000*60*1, swapID)
+    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 5 min`, "s")
+    setTimeout(getRefund, 1000*60*5, swapID)
 
 }
 

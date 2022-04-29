@@ -152,7 +152,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
     // 6 blocks from now
     const sequence6 = exports.CANCEL_SEQUENCE;
 
-    /*const redeemScript = bitcoin.script.compile([
+    const redeemScript = bitcoin.script.compile([
         bitcoin.opcodes.OP_IF,
         //Sell BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE )
             bitcoin.script.number.encode(sequence2),
@@ -161,7 +161,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
             bitcoin.opcodes.OP_RIPEMD160,
             Buffer.from(hashSecret, "hex"),
             bitcoin.opcodes.OP_EQUALVERIFY,
-            bitcoin.opcodes.OP_2,
+            bitcoin.opcodes.OP_1,
             Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
             Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
             bitcoin.opcodes.OP_2,
@@ -172,7 +172,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.script.number.encode(sequence4),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
-                bitcoin.opcodes.OP_2,
+                bitcoin.opcodes.OP_1,
                 Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
                 Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
                 bitcoin.opcodes.OP_2,
@@ -186,9 +186,9 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.opcodes.OP_CHECKSIG,
             bitcoin.opcodes.OP_ENDIF,
         bitcoin.opcodes.OP_ENDIF
-    ])*/
+    ])
 
-    const redeemScript = bitcoin.script.compile([
+    /*const redeemScript = bitcoin.script.compile([
         bitcoin.opcodes.OP_IF,
         //Sell BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE )
             bitcoin.script.number.encode(sequence2),
@@ -216,7 +216,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.opcodes.OP_CHECKSIG,
             bitcoin.opcodes.OP_ENDIF,
         bitcoin.opcodes.OP_ENDIF
-    ])
+    ])*/
 
    return redeemScript;
 }
@@ -363,9 +363,9 @@ exports.GetSignatureFromTX = function(txHash, coin)
             }
 
             const asm = ret.tx.ins[0].script.toString("hex");
-            const length = ret.tx.ins[0].script[0]
+            /*const length = ret.tx.ins[0].script[1]
             const sig = bitcoin.script.signature.decode(Buffer.from(asm.substring(2, 2+length*2), "hex")).signature
-            return ok({sigSeller: sig, sigBuyer: sig})
+            return ok({sigSeller: sig, sigBuyer: sig})*/
             
             const length1 = ret.tx.ins[0].script[1]
             const length2 = ret.tx.ins[0].script[length1+2]
