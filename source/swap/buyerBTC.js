@@ -359,7 +359,9 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
             return {result: false, message: "Bad transaction from seller redeemScript failed"}
         
         //First transaction is checked
-        common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
+        const txid = common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
+        
+        utils.SwapLog(`First (${swapInfoBuyer.sell_coin}) transaction was sent. txid: ${txid}`, "b")
         
         WaitConfirmation(txFirst, swapInfoBuyer.swapID, refundXMR)
 

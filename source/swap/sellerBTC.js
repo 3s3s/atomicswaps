@@ -482,7 +482,10 @@ async function getRefund (swapID)
     const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin, false)
 
     if (txid.length > 50)
+    {
+        utils.SwapLog(`Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}`, "s")
         return; //Refund done
+    }
 
     setTimeout(getRefund, 1000*60*5, swapID)
 
