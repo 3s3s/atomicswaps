@@ -413,8 +413,8 @@ async function getRefundAndSellTransactions(firstTransaction, redeemScript, orde
             redeem: {
                 network: network,
                 input: bitcoin.script.compile([
-                    bitcoin.opcodes.OP_0,
-                    signatureSeller,
+                    //bitcoin.opcodes.OP_0,
+                    //signatureSeller,
                     signature, //signature for P2 (buyer publicGetBTC) public key
                     bitcoin.opcodes.OP_TRUE,
                     bitcoin.opcodes.OP_FALSE

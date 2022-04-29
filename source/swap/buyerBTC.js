@@ -45,9 +45,9 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
             redeem: {
                 network: network,
                 input: bitcoin.script.compile([
-                    bitcoin.opcodes.OP_0,
+                    //bitcoin.opcodes.OP_0,
                     ctx.signatureSell, 
-                    signatureBuyer,
+                    //signatureBuyer,
                     Buffer.from(infoSeller.infoSecret),
                     bitcoin.opcodes.OP_TRUE
                 ]),
