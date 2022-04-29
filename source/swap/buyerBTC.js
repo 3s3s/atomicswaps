@@ -25,6 +25,9 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
 
     */
 
+    if (!!g_Transactions[swapID]["seller_refund"])
+        return;
+
     try {
         const network = common.NETWORK[swapInfo.swapInfoBuyer.sell_coin];
         
@@ -517,6 +520,8 @@ async function WaitRefund(txFirst, swapID, refundXMR)
 
             if (checkAddress.address != ctx.sharedMoneroAddress) 
                 continue;
+
+            g_Transactions[swapID]["seller_refund"] = true;
 
             utils.SwapLog(`Try refund ${(g_Transactions[swapID].buy_amount/100000000)} txmr to address ${refundXMR}`, "b")
             
