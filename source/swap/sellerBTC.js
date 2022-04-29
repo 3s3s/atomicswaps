@@ -487,8 +487,8 @@ async function getRefund (swapID)
         return; //Refund done
     }
 
-    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 5 min`, "s")
-    setTimeout(getRefund, 1000*60*5, swapID)
+    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 1 min`, "s")
+    setTimeout(getRefund, 1000*60*1, swapID)
 
 }
 
