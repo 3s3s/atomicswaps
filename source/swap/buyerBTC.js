@@ -68,10 +68,12 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
     
             return {result: true, txid: txid}; 
         }
+        utils.SwapLog(`Transaction was not sent. Something wrong`, "b")
         return {result: true, message: "Transaction was not sent. Something wrong on the Buyer side."};
     
     }
     catch(e) {
+        utils.SwapLog(`Error: swap transaction not sent. ${e.message}`, "b")
         return {result: false, message: e.message}
     }
     return {result: false, message: "Error: something wrong on the Buyer side"}
@@ -360,7 +362,7 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
         
         //First transaction is checked
         const txid = common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
-        
+
         utils.SwapLog(`First (${swapInfoBuyer.sell_coin}) transaction was sent. txid: ${txid}`, "b")
         
         WaitConfirmation(txFirst, swapInfoBuyer.swapID, refundXMR)
@@ -570,6 +572,9 @@ async function getCancel (swapID)
     if (txid.length > 50)
     {
         utils.SwapLog(`Sent Cancel transaction for BTC: ${txid}`, "b")
+
+        if (!!g_Transactions[swapID])
+            delete g_Transactions[swapID];
 
         return; //Cancelation done!
     }

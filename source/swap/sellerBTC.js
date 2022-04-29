@@ -487,11 +487,12 @@ async function getRefund (swapID)
         return; //Refund done
     }
 
+    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 5 min`, "s")
     setTimeout(getRefund, 1000*60*5, swapID)
 
 }
 
-async function WaitSharedBalance(swapID, sharedMoneroAddress)
+async function WaitSharedBalance(swapID, sharedMoneroAddress, counter = 0)
 {
 /*
     g_Transactions[swapInfoBuyer.swapID] = {
@@ -555,6 +556,12 @@ async function WaitSharedBalance(swapID, sharedMoneroAddress)
             });    
         }
     )
+
+    if (!sellTransaction || !sellTransaction.result)
+    {
+        utils.SwapLog(`Buyer returned error: ${sellTransaction.message}. Will wait 5 min and then try again`, "s")
+        setTimeout(WaitSharedBalance, 1000*60, swapID, sharedMoneroAddress, counter++)
+    }
 }
 
 async function WaitSellTransaction(swapID)
