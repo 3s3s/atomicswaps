@@ -196,7 +196,7 @@ async function getRefundAndSellTransactions(firstTransaction, redeemScript, orde
     const fee = common.getFee(network);
 
     if (firstTransaction.outs[1].value*1 <= fee)
-        return {result: false, message: "Too small amount: " + (firstTransaction.outs[1].value/100000000).toFixed(8)}
+        return {result: false, message: "Too small amount: " + (firstTransaction.outs[1].value/100000000).toFixed(8), stop: true}
 
     const keys = utils.genKeysDLEQ(orderSeller.swapContext.getSpentPair().priv); //{pubBTC: pubKeyBTC, pubBTC_y: pubKeyBTC_y, pubXMR: pubKeyXMR, pubXMR_x: pubKeyXMR_x, s: s.toString("hex"), c: c.toString("hex")}
 /*
@@ -479,7 +479,7 @@ async function getRefund (swapID)
         
     const ctx = g_Transactions[swapID];
 
-    const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin)
+    const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin, false)
 
     if (txid.length > 50)
         return; //Refund done

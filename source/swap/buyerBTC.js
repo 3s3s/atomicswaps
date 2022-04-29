@@ -57,7 +57,7 @@ exports.getSwapTransactionFromBuyer = async function(infoSeller, swapInfo)
 
         ctx.sellTx.setInputScript(0, redeemScriptSig);
         
-        const txid = await common.broadcast(ctx.sellTx.toHex(), ctx.sell_coin)
+        const txid = await common.broadcast(ctx.sellTx.toHex(), ctx.sell_coin, false)
 
         if (txid.length > 50)
         {
@@ -359,7 +359,7 @@ exports.ProcessBuyOrder = function(result, swapInfoBuyer, refundXMR)
             return {result: false, message: "Bad transaction from seller redeemScript failed"}
         
         //First transaction is checked
-        common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin)
+        common.broadcast(result.rawTX_first, swapInfoBuyer.sell_coin, false)
         
         WaitConfirmation(txFirst, swapInfoBuyer.swapID, refundXMR)
 
@@ -563,7 +563,7 @@ async function getCancel (swapID)
         
     const ctx = g_Transactions[swapID];
 
-    const txid = await common.broadcast(ctx.cancel.toHex(), ctx.sell_coin)
+    const txid = await common.broadcast(ctx.cancel.toHex(), ctx.sell_coin, false)
 
     if (txid.length > 50)
     {

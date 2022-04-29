@@ -221,11 +221,13 @@ function GetP2WSH(keyPair, network)
     return bitcoin.payments.p2wsh({ redeem: { output: GetRedeemScript(keyPair), network: network }, network: network });
 }
 
-exports.broadcast = async function(rawTX, coin)
+exports.broadcast = async function(rawTX, coin, debug = true)
 {
-    //if (coin == "tbtc")
-    //    return await tbtc_utils.broadcast(rawTX)
-    alert(rawTX)
+    if (coin == "tbtc" && !debug)
+        return await tbtc_utils.broadcast(rawTX)
+
+    if (debug)
+        alert(rawTX)
 
     return 0;
 }
