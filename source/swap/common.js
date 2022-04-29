@@ -181,8 +181,8 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
             Buffer.from(hashSecret, "hex"),
             bitcoin.opcodes.OP_EQUALVERIFY,
             bitcoin.opcodes.OP_1,
-            Buffer.from(publicRefundBTC, "hex"), //must be signed with buyers private key
-            Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
+            Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
+            Buffer.from(publicGetBTC, "hex"), //must be signed with sellers private key
             bitcoin.opcodes.OP_2,
             bitcoin.opcodes.OP_CHECKMULTISIG,
         bitcoin.opcodes.OP_ELSE,
@@ -192,8 +192,8 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
                 bitcoin.opcodes.OP_1,
-                Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
-                Buffer.from(publicGetBTC, "hex"), //must be signed with sellers private key
+                Buffer.from(publicRefundBTC, "hex"), //must be signed with buyers private key
+                Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
                 bitcoin.opcodes.OP_2,
                 bitcoin.opcodes.OP_CHECKMULTISIG,
             bitcoin.opcodes.OP_ELSE,
