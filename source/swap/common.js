@@ -152,26 +152,7 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
     // 6 blocks from now
     const sequence6 = exports.CANCEL_SEQUENCE;
 
-
     /*const redeemScript = bitcoin.script.compile([
-        bitcoin.opcodes.OP_IF,
-            bitcoin.opcodes.OP_1,
-            Buffer.from(publicRefundBTC, "hex"),
-            Buffer.from(publicGetBTC, "hex"),
-            bitcoin.opcodes.OP_2,
-            bitcoin.opcodes.OP_CHECKMULTISIG,
-        bitcoin.opcodes.OP_ELSE,
-            bitcoin.script.number.encode(sequence2),
-            bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
-            bitcoin.opcodes.OP_DROP,
-            bitcoin.opcodes.OP_1,
-            Buffer.from(publicRefundBTC, "hex"),
-            Buffer.from(publicGetBTC, "hex"),
-            bitcoin.opcodes.OP_2,
-            bitcoin.opcodes.OP_CHECKMULTISIG,
-        bitcoin.opcodes.OP_ENDIF
-    ])*/
-    const redeemScript = bitcoin.script.compile([
         bitcoin.opcodes.OP_IF,
         //Sell BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE )
             bitcoin.script.number.encode(sequence2),
@@ -205,9 +186,39 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
                 bitcoin.opcodes.OP_CHECKSIG,
             bitcoin.opcodes.OP_ENDIF,
         bitcoin.opcodes.OP_ENDIF
+    ])*/
+
+    const redeemScript = bitcoin.script.compile([
+        bitcoin.opcodes.OP_IF,
+        //Sell BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE )
+            bitcoin.script.number.encode(sequence2),
+            bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
+            bitcoin.opcodes.OP_DROP,
+            bitcoin.opcodes.OP_RIPEMD160,
+            Buffer.from(hashSecret, "hex"),
+            bitcoin.opcodes.OP_EQUALVERIFY,
+            Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
+            bitcoin.opcodes.OP_CHECKSIG,
+        bitcoin.opcodes.OP_ELSE,
+            bitcoin.opcodes.OP_IF,
+            //Refund BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE OP_FALSE)
+                bitcoin.script.number.encode(sequence4),
+                bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
+                bitcoin.opcodes.OP_DROP,
+                Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
+                bitcoin.opcodes.OP_CHECKSIG,
+            bitcoin.opcodes.OP_ELSE,
+            //Cancel script (BTC move to buyer when seller not responce)
+                bitcoin.script.number.encode(sequence6),
+                bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
+                bitcoin.opcodes.OP_DROP,
+                Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
+                bitcoin.opcodes.OP_CHECKSIG,
+            bitcoin.opcodes.OP_ENDIF,
+        bitcoin.opcodes.OP_ENDIF
     ])
 
-    return redeemScript;
+   return redeemScript;
 }
 
 exports.GetP2SH = function(publicGetBTC, publicRefundBTC, hashSecret, network)
