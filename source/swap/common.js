@@ -173,23 +173,29 @@ function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
     ])*/
     const redeemScript = bitcoin.script.compile([
         bitcoin.opcodes.OP_IF,
-        //Sell BTC script
+        //Sell BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE )
             bitcoin.script.number.encode(sequence2),
             bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
             bitcoin.opcodes.OP_DROP,
             bitcoin.opcodes.OP_RIPEMD160,
             Buffer.from(hashSecret, "hex"),
             bitcoin.opcodes.OP_EQUALVERIFY,
+            bitcoin.opcodes.OP_2,
+            Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
             Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
-            bitcoin.opcodes.OP_CHECKSIG,
+            bitcoin.opcodes.OP_2,
+            bitcoin.opcodes.OP_CHECKMULTISIG,
         bitcoin.opcodes.OP_ELSE,
             bitcoin.opcodes.OP_IF,
-            //Refund BTC script (redeem: <signature> OP_TRUE OP_FALSE)
+            //Refund BTC script (redeem: <signatureSeller> <signatureBuyer> OP_TRUE OP_FALSE)
                 bitcoin.script.number.encode(sequence4),
                 bitcoin.opcodes.OP_CHECKSEQUENCEVERIFY,
                 bitcoin.opcodes.OP_DROP,
+                bitcoin.opcodes.OP_2,
                 Buffer.from(publicGetBTC, "hex"), //must be signed with buyers private key
-                bitcoin.opcodes.OP_CHECKSIG,
+                Buffer.from(publicRefundBTC, "hex"), //must be signed with sellers private key
+                bitcoin.opcodes.OP_2,
+                bitcoin.opcodes.OP_CHECKMULTISIG,
             bitcoin.opcodes.OP_ELSE,
             //Cancel script (BTC move to buyer when seller not responce)
                 bitcoin.script.number.encode(sequence6),
@@ -337,14 +343,24 @@ exports.GetSignatureFromTX = function(txHash, coin)
 {
     return new Promise(ok => {
         exports.GetTransaction(txHash, coin, ret => {
-            if (!ret.result || ret.tx.outs.length != 1 || ret.tx.ins.length != 1 || !ret.tx.ins[0].script) return ok(null)
+            if (!ret.result || ret.tx.outs.length != 1 || ret.tx.ins.length != 1 || !ret.tx.ins[0].script) 
+            {
+                console.log(ret)
+                return ok(null)
+            }
 
             const asm = ret.tx.ins[0].script.toString("hex");
-            const length = ret.tx.ins[0].script[0]
+            const length1 = ret.tx.ins[0].script[1]
+            const length2 = ret.tx.ins[0].script[length1+2]
 
-            const sig = bitcoin.script.signature.decode(Buffer.from(asm.substring(2, 2+length*2), "hex")).signature
+            const sig1 = Buffer.from(asm.substring(4, 4+length1*2), "hex")
+            const sig2 = Buffer.from(asm.substring(4+length1*2+2, 4+length1*2+2+length2*2), "hex")
 
-            return ok(sig)
+            //const sig = bitcoin.script.signature.decode(Buffer.from(asm.substring(2, 2+length*2), "hex")).signature
+            const sigSeller = bitcoin.script.signature.decode(sig1).signature
+            const sigBuyer = bitcoin.script.signature.decode(sig2).signature
+
+            return ok({sigSeller: sigSeller, sigBuyer: sigBuyer})
         })
     })
 }

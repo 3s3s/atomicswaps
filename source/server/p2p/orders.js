@@ -248,7 +248,16 @@ exports.getAdaptorSignatureFromBuyer = function(params)
     if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
 
     if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
-      return buyerBTC.getAdaptorSignatureFromBuyer(infoDLEQ, g_Swaps[params.swapID]);
+    {
+        const ret = buyerBTC.getAdaptorSignatureFromBuyer(infoDLEQ, g_Swaps[params.swapID]);
+        if (ret.result == false && !!ret.stop)
+        {
+            if (g_Swaps[params.swapID])
+                delete g_Swaps[params.swapID];
+            utils.SwapLog("Swap stopped", "e")           
+        }
+        return ret;
+    }
 
     return {result: true};
   }

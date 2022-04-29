@@ -313,6 +313,8 @@ async function getRefundAndSellTransactions(firstTransaction, redeemScript, orde
                 lastError = adaptorSig.message || "Buyer retuned invalid answer for refund transaction!";
                 continue;
             }
+            if (!!adaptorSig.stop)
+                return {result: false, message: adaptorSig.message || "Swap terminate signal from buyer"}
     
             /////////CHECK RETURNED ADAPTOR SIG//////////////////////////////
             if (signatureHash_refund.toString("hex") != adaptorSig.signatureHash_refund) 
@@ -403,11 +405,16 @@ async function getRefundAndSellTransactions(firstTransaction, redeemScript, orde
         ///////Sign and compile Refund Transaction/////////////////////////
         const signature = bitcoin.script.signature.encode(sig_a, bitcoin.Transaction.SIGHASH_ALL);
 
+        const ecPair = multicoin.ECPair.fromPrivateKey(orderSeller.addressBTC.privateKey, { network: network })
+        const signatureSeller = bitcoin.script.signature.encode(ecPair.sign(signatureHash_refund), bitcoin.Transaction.SIGHASH_ALL)        
+
         const redeemScriptSig = bitcoin.payments.p2sh({
             network: network,
             redeem: {
                 network: network,
                 input: bitcoin.script.compile([
+                    bitcoin.opcodes.OP_0,
+                    signatureSeller,
                     signature, //signature for P2 (buyer publicGetBTC) public key
                     bitcoin.opcodes.OP_TRUE,
                     bitcoin.opcodes.OP_FALSE
@@ -472,7 +479,7 @@ async function getRefund (swapID)
         
     const ctx = g_Transactions[swapID];
 
-    //const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin)
+    const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin)
 
     if (txid.length > 50)
         return; //Refund done
@@ -504,8 +511,11 @@ async function WaitSharedBalance(swapID, sharedMoneroAddress)
     }
 
 */  
+    //if (!g_Transactions[swapID] || !!g_Transactions[swapID]["WaitSharedBalance"])
     if (!g_Transactions[swapID])
         return;
+
+    //g_Transactions[swapID]["WaitSharedBalance"] = true;
 
     const ctx = g_Transactions[swapID];
     
@@ -567,8 +577,11 @@ async function WaitSellTransaction(swapID)
     }
 
 */  
+    //if (!g_Transactions[swapID] || !!g_Transactions[swapID]["WaitSellTransaction"])
     if (!g_Transactions[swapID])
         return;
+
+    //g_Transactions[swapID]["WaitSellTransaction"] = true;
 
     const ctx = g_Transactions[swapID];
     const txFirst = ctx.firstTransaction;
@@ -614,12 +627,12 @@ async function WaitSellTransaction(swapID)
     try {
         for (let i=1; i<txs.length; i++)
         {
-            const sig = await common.GetSignatureFromTX(txs[i], coin)
+            const sigs = await common.GetSignatureFromTX(txs[i], coin)
             
-            if (!sig) 
+            if (!sigs) 
                 continue;
 
-            const signature = new BN(sig.toString("hex").substring(64), "hex").invm(secp256k1.curve.n);
+            const signature = new BN(sigs.sigSeller.toString("hex").substring(64), "hex").invm(secp256k1.curve.n);
          
             const ctx = g_Transactions[swapID].adaptor_context;
 
@@ -636,14 +649,14 @@ async function WaitSellTransaction(swapID)
             
             if (!ret || !ret.result) //Try get refund until success
             {                
-                if (ret.message && ret.message.indexOf("not enough unlocked money") >= 0)
+                utils.SwapLog(`Error${ret.message ? ": "+ret.message : ""} will wait 10 min<br>address: ${checkAddress.address}<br>private view key: ${checkAddress.privViewKey}<br>private spent key: ${checkAddress.privSpentKey}`, "s")
+                /*if (ret.message && ret.message.indexOf("not enough unlocked money") >= 0)
                 {
-                    utils.SwapLog(`Error: ${ret.message} will wait 10 min<br>address:${checkAddress.address}<br>private view key: ${checkAddress.privViewKey}<br>private spent key:${checkAddress.privSpentKey}`, "s")
                     return setTimeout(WaitSellTransaction, 1000*60*10, swapID)
                 }
 
-                utils.SwapLog(`Error${ret.message ? ": "+ret.message : ""}`, "s")
-                return setTimeout(WaitSellTransaction, 1000*60*1, swapID)
+                utils.SwapLog(`Error${ret.message ? ": "+ret.message : ""}`, "s")*/
+                return setTimeout(WaitSellTransaction, 1000*60*10, swapID)
             }
 
             utils.SwapLog(`Swap DONE! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}`, "s")

@@ -229,7 +229,7 @@ exports.SendMoney = async function(address, address_to, amount)
     {
         const balance = await exports.GetBalance(address);
 
-        if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`, code: 1}
+        if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`}
 
         const ret = await processWithdraw(address, balance, address_to, amount)
         //If success ret = {result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee, raw: signedTxHex}
