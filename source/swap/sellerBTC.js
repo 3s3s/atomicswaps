@@ -672,7 +672,7 @@ async function WaitSellTransaction(swapID)
                 return setTimeout(WaitSellTransaction, 1000*60*10, swapID)
             }
 
-            utils.SwapLog(`Swap DONE! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}`, "s")
+            utils.SwapLog(`Swap DONE! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}<br>***Swap complete***`, "s")
 
             if (!!g_Transactions[swapID]) delete g_Transactions[swapID];
 
