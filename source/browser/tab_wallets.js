@@ -138,6 +138,8 @@ $("#old_password_button").on("click", e => {
         $("#wallet_seed").val(seed);
         common.AlertSuccess("The wallet was restored successfully");
         exports.ShowBalances();
+
+        orders.InitSavedOrders()
     }
     catch(e) {
         return common.AlertFail(e.message);

@@ -112,11 +112,11 @@ exports.ClientDH_Decrypt = function(message)
   return exports.Decrypt(message, password);  
 }
 
-exports.SwapLog = function(text, level)
+exports.SwapLog = function(text, level, id, ctx)
 {
   if (typeof window === 'undefined') return;
 
-  tab_orders.SwapLog(text, level);
+  tab_orders.SwapLog(text, level, id, ctx);
 }
 
 exports.ServerDH_Encrypt = function(message)
@@ -492,6 +492,50 @@ exports.checkKeysDLEQ = function(keys)
     return (keys.c == (new BN(exports.Hash256(A_ + B_ + keys.pubKeyBTC + keys.pubKeyXMR), "hex")).toString("hex"));
 }
 
+exports.SaveObjectToDB = function(jsObject, name)
+{
+  const text = JSON.stringify(jsObject);
+  const encrypted = exports.Encrypt(text, exports.getPassword())
+
+  if (typeof window !== 'undefined')
+    return exports.storage.setItem(name, {encrypted: encrypted});
+
+}
+exports.GetObjectFromDB = function(name)
+{
+  if (typeof window !== 'undefined')
+  {
+    const item = exports.storage.getItem(name);
+    if (!item)
+      return null;
+      
+    if (!!item.encrypted)
+    {
+      try {
+        return JSON.parse(exports.Decrypt(item.encrypted, exports.getPassword()))
+      }
+      catch(e) {
+        return null
+      }
+    }
+  }
+
+  return null;
+}
+
+
+exports.DeleteObjectFromDB = function(name)
+{
+  if (typeof window !== 'undefined')
+    return exports.storage.deleteItem(name);
+
+  return null;
+}
+
+exports.sleep = function(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
 exports.storage = {
   getItem : function(key) {
@@ -520,6 +564,15 @@ exports.storage = {
           stor = localStorage;
   
     stor.setItem(key, JSON.stringify(value));
+  },
+  deleteItem: function(key) {
+    var stor;
+    if (window.content != undefined)
+        stor = window.content.localStorage;
+    else
+        stor = localStorage;
+
+    stor.removeItem(key)
   }
 };
 

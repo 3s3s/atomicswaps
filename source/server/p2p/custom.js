@@ -72,7 +72,10 @@ exports.HandleMessage = async function(message)
         const values = message.params.serverKey && message.params.serverKey == require("../../constants").clientDHkeys.server_pub ? 
             require("../../utils").ClientDH_Decrypt(message.params.values) : message.params.values;
 
-        g_Callbacks[message.params.destination].callback(values);
+        try {
+            g_Callbacks[message.params.destination].callback(values);
+        }
+        catch(e) {}
         delete g_Callbacks[message.params.destination];
     }
 
@@ -94,16 +97,20 @@ exports.SendMessage = function(params, callback)
     FreeMemory();
 }
 
-function FreeMemory()
+async function FreeMemory()
 {
     const date = Date.now();
 
     let tmp = {}
     for (let key in g_Callbacks)
     {
-        if (g_Callbacks[key].time < date - 3*60*1000)
+        if (g_Callbacks[key] && g_Callbacks[key].time < date - 3*60*1000)
         {
-            g_Callbacks[key].callback({__result__: false, __message__: "p2plib timeout"});
+            try {
+                await g_Callbacks[key].callback({__result__: false, __message__: "p2plib timeout"});
+            }
+            catch(e)
+            {}
             continue;
         }
         tmp[key] = g_Callbacks[key];

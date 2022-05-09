@@ -17,7 +17,7 @@ exports.Init = function()
     setInterval(RefreshMyOrders, 60*1000)
 }
 
-function ShowProgressDialog(callback = null)
+/*function ShowProgressDialog(callback = null)
 {
     $("#id_orders_progress_static").attr("aria-valuenow", 180);
     $("#id_orders_progress_static").css("width", "100%");
@@ -48,7 +48,7 @@ function ShowProgressDialog(callback = null)
     }, 1000)
 
     return nIntervalID;
-}
+}*/
 
 
 function UpdateOrdersTable()
@@ -62,14 +62,14 @@ function UpdateOrdersTable()
         if (!result || result.result != true || result.sell_coin != sell_coin)
             return;
 
-        const timer = ShowProgressDialog(() => {
+        /*const timer = ShowProgressDialog(() => {
             common.AlertFail("Something wrong: timeout");
-        });
+        });*/
    
         const currentSavedOrders = await exports.UpdateOrders(result.orders, result.sell_coin)
 
-        clearInterval(timer);
-        $("#id_orders_progress_static").hide();
+        /*clearInterval(timer);
+        $("#id_orders_progress_static").hide();*/
  
         UpdateTable(currentSavedOrders, result.sell_coin);
     });
@@ -241,7 +241,8 @@ async function RefreshMyOrders()
         p2p_orders.RefreshOrder(savedOrders[key].uid);
  }
 
-exports.SwapLog = function(text, level)
+ let g_Logs = {}
+exports.SwapLog = function(text, level, id, ctx)
 {
     let color = "text-primary";
     if (level == "s")
@@ -250,9 +251,149 @@ exports.SwapLog = function(text, level)
         color = "text-danger"
     if (level == "i")
         color = ".text-info"
-    
-    const logTD = $(`<td><span class="${color}">${text}</span></td>`)
 
-    $("#table_swaps_log_body").append($("<tr></tr>").append(logTD))
+    if (!!g_DeletedLogs[id+level])
+        return;
+
+    if (!g_Logs[id+level] && (level == "b" || level == "s"))
+        InitNewLog(level, id, ctx)
+
+    if (!!g_Logs[id+level])
+    {
+        g_Logs[id+level].push({level: level, text: text})
+
+        utils.SaveObjectToDB(g_Logs, "swap_logs")
+    }   
+
+    if (level == "b" || level == "s")
+    {
+        const logTD = $(`<td><span class="${color}">${text}</span></td>`)
+        $(`#table_swaps_log_${level}_${id}_body`).append($("<tr></tr>").append(logTD))
+
+        if (!ctx)
+            ctx = level == "b" ? utils.GetObjectFromDB(`swap_buy_${id}`) : utils.GetObjectFromDB(`swap_sell_${id}`);
+
+        const status = ctx && ctx.status ? ctx.status : "100"
+        $(`#processed_${level}_${id}`).text(status)
+    }
+    else
+    {
+        const logTD = $(`<td><span class="${color}">${text}</span></td>`)
+        $(`#table_swaps_log_common_body`).append($("<tr></tr>").append(logTD))
+    }
 }
 
+let g_DeletedLogs = {}
+function InitNewLog(level, id, ctx)
+{
+    g_Logs[id+level] = [];
+
+    const objName = level == "s" ? `swap_sell_${id}` : `swap_buy_${id}`
+
+    let info = utils.GetObjectFromDB(objName)
+    if (!info)  
+        info = ctx;
+
+    const header = info ? 
+        level == "s" ? 
+            `Sell ${info.sell_amount/100000000} ${info.sell_coin}, buy ${info.buy_amount/100000000} ${info.buy_coin}.`: 
+            `Buy ${info.sell_amount/100000000} ${info.sell_coin}, sell ${info.buy_amount/100000000} ${info.buy_coin}.` : 
+        'Completed swap.' 
+
+    const html = `
+        <div class="accordion-item" id="item__${level}_${id}">
+            <div class="d-md-flex" id="heading_${level}_${id}">
+                 <button class="accordion-button pt-0 pb-0 ${!info ? "collapsed" : ""}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse_${level}_${id}" aria-expanded="${info ? true : false}" aria-controls="collapse_${level}_${id}">
+                    <span class="${level == "b" ? "text-primary" : "text-success"}">${header} Swap id: ${id}. Processed: <span id="processed_${level}_${id}">${info ? info.status : 100}</span> %</span>
+                </button>
+               <button type="button" id="close_${level}_${id}" class="btn-close p-1 m-1" aria-label="Close"></button>
+            </div>
+            <div id="collapse_${level}_${id}" class="accordion-collapse collapse ${info ? "show" : ""}" aria-labelledby="heading_${level}_${id}" data-bs-parent="#accordion_logs_${level}">
+                <div class="accordion-body">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th scope="col">Swap Log</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table_swaps_log_${level}_${id}_body">
+      
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `
+    $(`#accordion_logs_${level}`).prepend(html)
+
+    $(`#close_${level}_${id}`).on("click", e => {
+        if (g_Logs[id+level])
+            delete g_Logs[id+level];
+        
+        $(`#item__${level}_${id}`).remove()
+        utils.SaveObjectToDB(g_Logs, "swap_logs")
+
+        if (level == "s")
+            utils.DeleteObjectFromDB(`swap_sell_${id}`)
+        if (level == "b")
+            utils.DeleteObjectFromDB(`swap_buy_${id}`)
+
+        g_DeletedLogs[id+level] = true;
+    })
+}
+
+exports.InitSavedOrders = async function()
+{
+    $(`#accordion_logs_b`).empty();
+    $(`#accordion_logs_s`).empty();
+
+    const seller = require("../swap/sellerBTC")
+    const buyer = require("../swap/buyerBTC")
+
+    const Logs = utils.GetObjectFromDB("swap_logs")
+    if (!Logs) return;
+
+    for (let logkey in Logs)
+    {
+        const logs = Logs[logkey]
+        const swapID = logkey.substring(0, logkey.length-1);
+
+        if (logs.length > 100)
+            continue;
+        
+        await RestoreLogs(logs, swapID);
+        await utils.sleep(100);
+    }
+
+
+    for(let key in localStorage) 
+    {
+        if (key.indexOf("swap_sell_") == 0)
+        {
+            const swapID = key.substring(10);
+
+            seller.WaitTransactions(swapID);
+            continue;
+        }
+
+        if (key.indexOf("swap_buy_") == 0)
+        {
+            const swapID = key.substring(9)
+            
+            buyer.WaitConfirmation(swapID);
+            continue;
+        }
+    }  
+    
+    function RestoreLogs(logs, swapID)
+    {
+        return new Promise(async ok => {
+            for (let i=0; i<logs.length; i++)
+            {
+                exports.SwapLog(logs[i].text, logs[i].level, swapID)
+                await utils.sleep(1);
+            }
+            return ok();    
+        })
+    }
+}

@@ -382,7 +382,7 @@ exports.GetSignatureFromTX = function(txHash, coin)
     })
 }
 
-exports.RefundMonero = function(address, refundAddress, amount, coin)
+exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
 {
     /*
     address = {
@@ -402,9 +402,9 @@ exports.RefundMonero = function(address, refundAddress, amount, coin)
 
             const ret = await txmr_utils.SendMoney(address, refundAddress, refund_amount/100000000);
             if (ret.result == false)
-                utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "e")
+                utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "e", swapID)
             else
-                utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "i")
+                utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "i", swapID)
 
             return ok(ret)
         }

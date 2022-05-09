@@ -224,7 +224,7 @@ exports.SendMoney = async function(address, address_to, amount)
         pubSpentKey: sumPublicSpent
     };
     */
-    console.log(`will try send ${amount} tXMR from (${address}) to (${address_to})`)
+    console.log(`will try send ${amount} tXMR from (${address.address}) to (${address_to})`)
     try
     {
         const balance = await exports.GetBalance(address);
@@ -355,7 +355,13 @@ exports.broadcast = async function(mnemonic, signedTxHex, addrObject = null)
                             coin: "txmr"}, async result => 
         {
             try {
-                const txid = JSON.parse(result)
+
+                let txid = result;
+                try {txid = JSON.parse(result)}
+                catch(e){
+                    console.log(e) 
+                    return ok({result: false, message: txid})
+                }
 
                 if (!!txid.message) return ok({result: false, message: txid.message})
 

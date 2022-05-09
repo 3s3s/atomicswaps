@@ -146,13 +146,11 @@ exports.RefreshOrder = function(uid)
 let g_Swaps = {}
 
 exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubkey, sell_amount, buy_amount, buy_coin)
-{
-    utils.SwapLog(`Init order: ${sell_coin} <=> ${buy_coin}`, "b")
-    
+{   
     const orderMnemonic = utils.Hash160(mnemonic+orderUID);
 
     if (!!g_Swaps[orderMnemonic]) return {result: false, message: "The order is already init"}
-
+    
     g_Swaps[orderMnemonic] = swap.InitContext(orderMnemonic);
     
     //const address = await monero.GetAddressFromString(orderMnemonic);
@@ -194,12 +192,15 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
         pubBuyerSpentKey: g_Swaps[orderMnemonic].getSpentPair().pub,  //public spent XMR key: t_2 M
         addressBuyerBTC: addressBuyerBTC.p2pkh.address,
         publicGetBTC: addressBuyerBTC.publicKey, //P_2
+        status: 10,
         DLEQ: {s: keys.s, c: keys.c}
     }
     g_Swaps[orderMnemonic]["swapInfoBuyer"] = swapInfoBuyer;
     g_Swaps[orderMnemonic]["addressBuyerBTC"] = addressBuyerBTC;
     
     const sign = utils.SignObject(swapInfoBuyer, g_Swaps[orderMnemonic].getSpentPair().priv)
+
+    utils.SwapLog(`Init order: ${sell_coin} <=> ${buy_coin}`, "b", swapInfoBuyer.swapID, swapInfoBuyer)
 
     return new Promise(ok => {
         return customP2P.SendMessage({
@@ -254,7 +255,7 @@ exports.getAdaptorSignatureFromBuyer = function(params)
         {
             if (g_Swaps[params.swapID])
                 delete g_Swaps[params.swapID];
-            utils.SwapLog("Swap stopped", "e")           
+            utils.SwapLog("Swap stopped", "e", params.swapID)           
         }
         return ret;
     }
@@ -280,12 +281,12 @@ exports.getSwapTransactionFromBuyer = function(params)
     
         const infoAdaptor = _order;
     
-        if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
+        //if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
     
-        if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
-          return buyerBTC.getSwapTransactionFromBuyer(infoAdaptor, g_Swaps[params.swapID]);
+        //if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
+          return buyerBTC.getSwapTransactionFromBuyer(infoAdaptor, params.swapID); //g_Swaps[params.swapID]);
     
-        return {result: true};
+        //return {result: true};
       }
       catch(e) {
           console.log(e);
