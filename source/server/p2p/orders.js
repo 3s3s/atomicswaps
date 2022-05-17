@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use strict';
 const BN = require('bn.js');
 const tbtc_utils = require("../../wallets/bitcoin_test/utils")
@@ -18,10 +19,10 @@ exports.getMyOrder = function(uid)
     return g_myOrders[uid];
 }
 
-exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, sell_coin = "tbtc", buy_coin = "txmr")
+exports.CreateOrder = async function(mnemonic, sell_amount, buy_amount, sell_coin = "tbtc", buy_coin = "txmr")
 {    
     const addressBTC = tbtc_utils.GetAddress(mnemonic);
-    //const addressMonero = async monero.GetAddressFromString(mnemonic)
+    const addressMonero = await txmr_utils.GetAddress(mnemonic)
     const orderMnemonic = utils.Hash160(mnemonic+Math.random());
 
     const swapContext = swap.InitContext(orderMnemonic);
@@ -34,6 +35,7 @@ exports.CreateOrder = function(mnemonic, sell_amount, buy_amount, sell_coin = "t
         seller_pubkey: addressBTC.p2pkh.hash.toString("hex"),
         time: Date.now(),
         buy_coin: buy_coin,
+        addressMonero: {address: addressMonero.address, privViewKey: addressMonero.privViewKey},
         active: 1
     }
 
@@ -141,6 +143,37 @@ exports.RefreshOrder = function(uid)
     })
 }
 
+//Seller (who sell BTC and buy XMR)
+
+exports.InviteBuyer = function(orderUID, orderUID_buyer)
+{
+    const myOrder = exports.getMyOrder(orderUID);
+    if (!myOrder)   
+        return {result: false, message: "Error: invalid orderUID"};
+
+    let _order = myOrder.order;
+    if (!!_order["publicKey"])
+        delete _order["publicKey"];
+
+    _order["orderUID"] = orderUID;
+    _order["orderUID_buyer"] = orderUID_buyer;
+ 
+    const sign = utils.SignObject(_order, myOrder.addressBTC.privateKey)
+
+    return new Promise(ok => {
+        return customP2P.SendMessage({
+            command: "InviteBuyer", 
+            request: sign.message,
+            sign: sign.signature}, async result => 
+        {
+            try { 
+                return ok (result);
+            }
+            catch(e) { ok({result: false, message: e.message}) }
+        });
+    })
+}
+
 //Buyer (who buy BTC and sell XMR) init the order
 
 let g_Swaps = {}
@@ -186,6 +219,7 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
         buy_coin: buy_coin, 
         buy_amount, buy_amount,
         seller_pubkey: seller_pubkey,
+        balanceCheck: {privViewKey: addressXMR.privViewKey, address: addressXMR.address},
         privBuyerViewKey: g_Swaps[orderMnemonic].getViewPair().priv, //private view XMR key: v_2 
         pubBuyerAdaptorKey: g_Swaps[orderMnemonic].getSpentPair().pubBTC, //adaptor public: T_2 = t_2 G
         pubBuyerAdaptorKey_y: g_Swaps[orderMnemonic].getSpentPair().pubBTC_y,

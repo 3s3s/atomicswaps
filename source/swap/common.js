@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 const utils = require("../utils")
 const g_constants = require("../constants")
@@ -269,10 +270,10 @@ exports.GetTransaction = function(hash, coin, callback)
     );
 }
 
-exports.WaitTransaction = async function(tx, coin, callback)
+exports.WaitTransaction = async function(tx, coin, callback, nOut = 1)
 {
     try {
-        const history = await exports.GetHistory(utils.Hash256(tx.outs[1].script.toString("hex"), "hex", true), coin)
+        const history = await exports.GetHistory(utils.Hash256(tx.outs[nOut].script.toString("hex"), "hex", true), coin)
 
         if (!history.result || !history.txs.length)
             return setTimeout(exports.WaitTransaction, 1000*60*1, tx, coin, callback) 

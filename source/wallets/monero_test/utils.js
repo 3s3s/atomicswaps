@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 const mn = require('electrum-mnemonic')
 const bitcoin = require("bitcoinjs-lib")
@@ -110,7 +111,15 @@ exports.Wallet = async function(params)
             {
                 log("Handle: importKeyImages")
 
-                await viewOnlyWallet.importKeyImages(monero.KeysFromJSON(reqObject.params[2]));
+                let images = null
+                try {
+                    images = monero.KeysFromJSON(reqObject.params[2]);
+                }
+                catch(e) {
+                    return {result: false, message: `Network error. Try with another txmr address or try later (about 1 hour). Raw message: ${e.message}.`}
+                }
+
+                await viewOnlyWallet.importKeyImages(images);
 
                 // create unsigned tx using view-only wallet
                 ret = await viewOnlyWallet.createTx({
@@ -172,45 +181,54 @@ exports.getLastKnownAddress = function()
 let g_LastUpdated = {}; //{time: 0, data: 0};
 exports.GetBalance = function(address, callback = null)
 {
-    if (!address.address) throw new Error("Error: GetBalance called with bar argument")
+    try{
+        if (!address.address) throw new Error(`Error: GetBalance called with bad argument: ${JSON.stringify(address)}`)
 
-    if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
-    {
-        if (callback) return callback(g_LastUpdated[address.address].data)
-        return g_LastUpdated[address.address].data;
-    }
-
-    const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : null
-
-    g_LastUpdated[address.address] = {time: Date.now(), data: data};
-
-    return new Promise(async ok => {
-        //const address = await exports.GetAddress(mnemonic);
-
-        const request = utils.ClientDH_Encrypt(JSON.stringify({
-                        request: "getBalance",
-                        params: [address.address, address.privViewKey]}));
-        
-        customP2P.SendMessage({
-                            command: "monerod", 
-                            publicKey: g_constants.clientDHkeys.pub,
-                            serverKey: g_constants.clientDHkeys.server_pub, 
-                            request: request,
-                            coin: "txmr"}, balance => 
+        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
         {
-            try {
-                const ret = JSON.parse(balance)
+            if (callback) return callback(g_LastUpdated[address.address].data)
+            return g_LastUpdated[address.address].data;
+        }
 
-                g_LastUpdated[address.address] = {time: Date.now(), data: ret};
+        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : null
 
-                if (callback) return callback(ret);
-                ok(ret)
-            }
-            catch(e) {
-                console.log(e)
-            }
-        });
-    })
+        g_LastUpdated[address.address] = {time: Date.now(), data: data};
+
+        return new Promise(async ok => {
+            //const address = await exports.GetAddress(mnemonic);
+
+            const request = utils.ClientDH_Encrypt(JSON.stringify({
+                            request: "getBalance",
+                            params: [address.address, address.privViewKey]}));
+            
+            customP2P.SendMessage({
+                                command: "monerod", 
+                                publicKey: g_constants.clientDHkeys.pub,
+                                serverKey: g_constants.clientDHkeys.server_pub, 
+                                request: request,
+                                coin: "txmr"}, balance => 
+            {
+                try {
+                    const ret = JSON.parse(balance)
+
+                    g_LastUpdated[address.address] = {time: Date.now(), data: ret};
+
+                    if (callback) return callback(ret);
+                    ok(ret)
+                }
+                catch(e) {
+                    console.log(e)
+                }
+            });
+        })
+    }
+    catch(e) {
+        console.log(e)
+        utils.SwapLog(e.message, "e")
+
+        if (callback) return callback(0);
+        return 0;
+    }
 }
 
 exports.SendMoney = async function(address, address_to, amount)
@@ -229,7 +247,7 @@ exports.SendMoney = async function(address, address_to, amount)
     {
         const balance = await exports.GetBalance(address);
 
-        if (balance.confirmed < amount) return {result: false, message: `Not enough funds (${balance.confirmed} < ${amount})`}
+        if (balance.confirmed/1000000000000 < amount) return {result: false, message: `Not enough funds (${balance.confirmed/1000000000000} < ${amount})`}
 
         const ret = await processWithdraw(address, balance, address_to, amount)
         //If success ret = {result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee, raw: signedTxHex}
@@ -304,6 +322,7 @@ async function processWithdraw(address, balance, address_to, amount)
                                 request: request,
                                 coin: "txmr"}, async result => 
             {
+                const tmp = result;
                 try {
                     const unsignedTx = JSON.parse(result)
 
@@ -322,9 +341,9 @@ async function processWithdraw(address, balance, address_to, amount)
                 catch(e) {
                     console.log(e)
 
-                    utils.SwapLog(e.message, "e")
+                    utils.SwapLog(e.message+"  result="+JSON.stringify(tmp), "e")
 
-                    return ok({result: false, message: e.message})
+                    return ok({result: false, message: e.message+"  result="+JSON.stringify(tmp)})
                 }
             });   
         });

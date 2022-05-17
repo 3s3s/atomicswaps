@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 const BN = require('bn.js');
 const keccak256 = require('keccak256')

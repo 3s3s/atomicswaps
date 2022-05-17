@@ -1,19 +1,9 @@
+// @ts-nocheck
 "use strict";
 
 const tbtc_utils = require("./utils")
 const utils = require("../../utils")
 const g_constants = require("../../constants")
-
-exports.HandleListOrders = async function(params)
-{
-    try {
-        return {result: true, orders: await utils.GetOrdersFromDB(params.coin), sell_coin: params.coin};
-    }
-    catch(e) {
-        console.log(e);
-        return null;
-    }
-}
 
 exports.HandleCreateOrder = async function(params)
 {
@@ -91,7 +81,7 @@ exports.HandleCreateOrder = async function(params)
     },
 ]; */
 
- async function GetBalanceInOrders(pubkey)
+async function GetBalanceInOrders(pubkey)
  {
     const rows = await g_constants.dbTables["orders"].Select("SUM(sell_amount) AS balanceInOrders", "seller_pubkey='"+escape(pubkey)+"' AND sell_coin='tbtc'")
 

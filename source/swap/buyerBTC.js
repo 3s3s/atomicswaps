@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 
 const utils = require("../utils")
@@ -275,6 +276,7 @@ exports.getAdaptorSignatureFromBuyer = function(sellerDLEQ, swapInfo)
 
         const adaptor_context = {
             sharedMoneroAddress: sharedMoneroAddress.address,
+            sharedMoneroViewKey: sharedMoneroAddress.privViewKey,
             signatureAdaptorPart: signatureAdaptorPart.substring(64), //new BN(signatureAdaptorPart.substring(64), "hex"),
             pubSellerSpentKey: sellerDLEQ.pubSellerSpentKey,
             privBuyerViewKey: swapInfo.swapInfoBuyer.privBuyerViewKey,
@@ -440,15 +442,33 @@ exports.WaitConfirmation = async function (swapID)
         if (g_Transactions[swapID]["got_refund"])
             return EndSwap(swapID);
 
+        setTimeout(WaitRefund, 1000, swapID)
+
+        setTimeout(getCancel, 1000*60*10, swapID)
+    
+        if (g_Transactions[swapID]["status"] && g_Transactions[swapID]["status"]*1 > 80)
+        {
+            utils.SwapLog(`Returned without send (over 80% was processed before - need to prevent a double spent)`, "b", swapID)
+            return; //to prevent double spent
+        }
+
         //Transaction confirmed so buyer send his coins (xmr) to seller
         if (buy_coin == "txmr")
         {
             //g_Transactions[swapID]["status"] = 80
             UpdateSwap(swapID, "status", 80)
             utils.SwapLog(`Try to send ${buy_amount/100000000} txmr to address ${ctx.sharedMoneroAddress}`, "b", swapID)
+
+            const balance = await txmr.GetBalance({address: ctx.sharedMoneroAddress, privViewKey: ctx.sharedMoneroViewKey});
+
+            if (balance && balance.confirmed*1 != 0)
+            {
+                utils.SwapLog(`Returned without send because shared balane is not zero (${balance.confirmed}). Need to prevent a double spent)`, "b", swapID)
+                return; //to prevent double spent
+            }
             
             const ret = await txmr.SendMoney(refundXMR, ctx.sharedMoneroAddress, buy_amount/100000000);
- 
+        
             if (ret.result == false)
                 return EndSwap(swapID, ret.code ? `SendMoney returned error code ${ret.code}<br>***Swap canceled***` : "SendMoney returned error: " + ret.message + "<br>***Swap canceled***");
             else
@@ -456,12 +476,8 @@ exports.WaitConfirmation = async function (swapID)
                 //g_Transactions[swapID]["status"] = 90
                 UpdateSwap(swapID, "status", 90)
                 utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "b", swapID)
-            }
+            }            
         }
-
-        setTimeout(WaitRefund, 1000, swapID)
-
-        setTimeout(getCancel, 1000*60*10, swapID)
     })
 }
 

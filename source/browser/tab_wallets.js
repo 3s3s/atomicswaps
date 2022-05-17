@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 
 const mn = require('electrum-mnemonic')
@@ -22,52 +23,6 @@ exports.Init = function()
     setInterval(exports.ShowBalances, 60*1000);  
 }
 
-function ShowProgressDialog(callback = null)
-{
-    if (g_modal) g_modal.hide();
-
-    g_modal = new bootstrap.Modal(document.getElementById('progress_await_dialog'))
-    $("#id_progress").attr("aria-valuenow", 180);
-    $("#id_progress").css("width", "100%");
-    $("#id_progress").text("180")
-    g_modal.show();  
-
-    $("#id_progress_static").attr("aria-valuenow", 180);
-    $("#id_progress_static").css("width", "100%");
-    $("#id_progress_static").text("180");
-    $("#id_progress_static").show();
-
-    const now = Date.now();
-
-    const nIntervalID = setInterval(() => {
-
-        const currPos = (180 - (Date.now() - now)/1000);
-
-        if (currPos < 0)
-        {
-            clearInterval(nIntervalID);
-            g_modal.hide();
-            $("#id_progress_static").hide();
-
-            if (callback) callback();
-            return;
-        }
-
-        const showPos = ((100*currPos)/180).toFixed(0)*1
-
-        $("#id_progress").attr("aria-valuenow", currPos);
-        $("#id_progress").css("width", showPos+"%");
-        $("#id_progress").text(currPos.toFixed(0))
-
-        $("#id_progress_static").attr("aria-valuenow", currPos);
-        $("#id_progress_static").css("width", showPos+"%");
-        $("#id_progress_static").text(currPos.toFixed(0))
-    
-    }, 1000)
-
-    return nIntervalID;
-}
-
 $("#generate_seed").on("click", e => {
     $("#alert_container").empty();
 
@@ -78,7 +33,7 @@ $("#generate_seed").on("click", e => {
 $("#submit_seed").on("click", e => {
     $("#alert_container").empty();
 
-    const newSeed = $("#wallet_seed").val();
+    const newSeed = utils.getMnemonic();
 
     if (!mn.validateMnemonic(newSeed, mn.PREFIXES.standard))
         return common.AlertFail();
@@ -89,7 +44,7 @@ $("#submit_seed").on("click", e => {
 })
 
 $("#new_password").on("click", e => {
-    const newSeed = $("#wallet_seed").val();
+    const newSeed = utils.getMnemonic();
     const password = $("#set_password_confirm").val();
 
     if (password != $("#set_password").val())
@@ -152,6 +107,7 @@ $("#btn_bitcointest_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
+    $("#id_buy_coin").empty().text("txmr")
     $("#id_sell_coin").empty().text("tbtc")
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
@@ -165,15 +121,21 @@ $("#createorder_sell_ok").on("click", async e => {
     const sell_amount = $("#sell_amount").val();
     const buy_amount = $("#buy_amount").val();
     const sell_coin = $("#id_sell_coin").text();
+    const buy_coin = $("#id_buy_coin").text();
 
     let result = {status: false};
     
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return common.AlertFail();
 
-    result = await p2p_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1, sell_coin);
+    common.ShowProgressDialog(() => {
+        common.AlertFail("Something wrong: timeout");
+    });
+    result = await p2p_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1, sell_coin, buy_coin);
+
+    common.HideProgressDialog();
     
     if (result && result.result == false)
         return common.AlertFail(result.message);
@@ -191,11 +153,25 @@ $("#createorder_sell_ok").on("click", async e => {
             return common.AlertFail("Orders NOT updated!");  
     }       
 })
+
+$("#btn_monerotest_sell").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    $("#id_buy_coin").empty().text("tbtc")
+    $("#id_sell_coin").empty().text("txmr")
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
 ///////////////////////////////////////////////////////////////////////////////btn_monerotest_deposit
 $("#btn_monerotest_deposit").on("click", async e => {
     $("#alert_container").empty();
 
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return common.AlertFail();
@@ -226,7 +202,7 @@ $("#btn_monerotest_withdraw").on("click", async e => {
 $("#btn_bitcointest_deposit").on("click", e => {
     $("#alert_container").empty();
 
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return common.AlertFail();
@@ -257,7 +233,7 @@ $("#withdraw_ok").on("click", async e => {
 
     const coin = $("#id_withdraw_coin").text()
 
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return common.AlertFail();
@@ -277,14 +253,12 @@ $("#withdraw_ok").on("click", async e => {
     }
     if (coin == "txmr")
     {
-        const timer = ShowProgressDialog(() => {
+        common.ShowProgressDialog(() => {
             common.AlertFail("Something wrong: timeout");
         });
         const ret = await txmr.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
 
-        clearInterval(timer);
-        g_modal.hide();
-        $("#id_progress_static").hide();
+        common.HideProgressDialog();
 
         if (ret.message) return common.AlertFail(ret.message);
 
@@ -313,7 +287,7 @@ $("#withdraw_confirm").on("click", async e => {
     const coin = $("#id_withdraw_coin").text();
     const rawTX = $("#id_withdraw_tx").text();
 
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     if (coin == "tbtc")
     {
@@ -333,15 +307,13 @@ $("#withdraw_confirm").on("click", async e => {
     }
     if (coin == "txmr")
     {
-        const timer = ShowProgressDialog(() => {
+        common.ShowProgressDialog(() => {
             common.AlertFail("Something wrong: timeout");
         });
 
         const tx = await txmr.broadcast(mnemonic, rawTX);
 
-        clearInterval(timer);
-        g_modal.hide();
-        $("#id_progress_static").hide();
+        common.HideProgressDialog();
 
         if (!tx.result) return common.AlertFail(tx.message);
         
@@ -388,7 +360,7 @@ exports.ShowBalances = async function(force = true)
     if ($("#btn_bitcointest_withdraw").text() == "Withdraw")
         $("#btn_bitcointest_withdraw").prop('disabled', false);
 
-    const mnemonic = $("#wallet_seed").val();
+    const mnemonic = utils.getMnemonic();
 
     $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
     $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))

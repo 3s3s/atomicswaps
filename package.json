@@ -55,5 +55,8 @@
     "daemon_stop": "forever stop ./source/server/main.js"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jquery": "^3.5.14"
+  }
 }

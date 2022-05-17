@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 const BN = require('bn.js');
 const EC = require('elliptic').ec

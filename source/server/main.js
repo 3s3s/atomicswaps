@@ -3,12 +3,13 @@ const g_constants = require("../constants")
 const utils = require("../utils")
 
 const customHandlers = {
-    custom: require("../server/p2p/custom"),
+    custom: require("./p2p/custom"),
     SSL_options: g_constants.SSL_options,
     seeders: ["82.118.22.155:10443"]
 }
 
 require("./database").Init();
+// @ts-ignore
 require("p2plib").StartServer(customHandlers);    
 
 setInterval(() => {

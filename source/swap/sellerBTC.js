@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 const utils = require("../utils")
 const multicoin = require("multicoinjs-lib");
@@ -43,6 +44,7 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
         buy_coin: buy_coin, 
         buy_amount, buy_amount,
         seller_pubkey: seller_pubkey,
+        balanceCheck: {privViewKey: addressXMR.privViewKey, address: addressXMR.address},
         privBuyerViewKey: g_Swaps[orderMnemonic].getViewPair().priv, //private view XMR key: v_2 
         pubBuyerAdaptorKey: g_Swaps[orderMnemonic].getSpentPair().pubBTC, //adaptor public: T_2 = t_2 G
         pubBuyerAdaptorKey_y: g_Swaps[orderMnemonic].getSpentPair().pubBTC_y,
@@ -65,6 +67,14 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
   
     //const pubXMR_y = new BN(swapInfoBuyer.pubBuyerSpentKey, "hex", "le").toString("hex")
     utils.SwapLog(`Initiate sell ${swapInfoBuyer.sell_coin} transaction`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
+
+    const balanceCheck = await txmr.GetBalance(swapInfoBuyer.balanceCheck)
+
+    if (balanceCheck.confirmed/10000 < swapInfoBuyer.buy_amount)
+    {
+        utils.SwapLog(`ERROR: Buyer has insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
+        return {result: false, message: `insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`};
+    }
 
     const keys = {
         pubKeyBTC: swapInfoBuyer.pubBuyerAdaptorKey.substring(2), pubKeyBTC_y: swapInfoBuyer.pubBuyerAdaptorKey_y, 
@@ -194,7 +204,7 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
 }
 
 let g_InitTimers = {}
-exports.WaitTransactions = function(swapID)
+exports.WaitTransactions = function(swapID, refundTimeout = 10)
 {
     if (!!g_InitTimers[swapID])
         return;
@@ -202,7 +212,7 @@ exports.WaitTransactions = function(swapID)
 
     setTimeout(WaitSellTransaction, 1000*60, swapID)
     setTimeout(WaitSharedBalance, 1000*60, swapID)
-    setTimeout(getRefund, 1000*60*10, swapID)
+    setTimeout(getRefund, 1000*60*refundTimeout, swapID)
 
 }
 
@@ -497,30 +507,50 @@ async function getRefund (swapID)
     //const tmp = utils.GetObjectFromDB(`swap${swapID}`)
     //if (tmp && JSON.stringify(g_Transactions[swapID]) != JSON.stringify(tmp))
     //    alert("fail!")
-    g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
-    
-    if (!g_Transactions[swapID] || g_Transactions[swapID]["got_checked_swap"])
-        return;   
-      
-    const ctx = g_Transactions[swapID];
+    try {
+        g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
+        
+        if (!g_Transactions[swapID])
+            return utils.SwapLog(`Stop waiting refund because invalid swapID (${swapID})`, "s", swapID);   
+        if (g_Transactions[swapID]["got_checked_swap"])
+            return utils.SwapLog(`Stop waiting refund because have checked swap`, "s", swapID);   
+        
+        const ctx = g_Transactions[swapID];
 
-    const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin, false)
+        const txRefund = bitcoin.Transaction.fromHex(ctx.rawTX_refund);
+        
+        common.WaitTransaction(txRefund, ctx.sell_coin, async ret => {
+            if (ret.result)
+                return EndSwap(swapID, `Found refund ${ctx.sell_coin} transaction. txid: ${txRefund.getHash().reverse().toString("hex")}<br>***Swap complete***`) //utils.SwapLog((ret.message||"")+"<br>***Swap canceled***", "b")
+        }, 0)
 
-    if (txid.length > 50)
-        return EndSwap(swapID, `Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}<br>***Swap complete***`)
-    /*{
-        utils.SwapLog(`Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}<br>***Swap complete***`, "s")
+        common.broadcast(ctx.firstTransaction, ctx.sell_coin, false)
+        const txid = await common.broadcast(ctx.rawTX_refund, ctx.sell_coin, false)
 
-        if (!!g_Transactions[swapID])
-        {
-            delete g_Transactions[swapID];
-            utils.DeleteObjectFromDB(`swap_sell_${swapID}`)
-        }
-        return; //Refund done
-    }*/
+        if (txid.length > 50)
+            return EndSwap(swapID, `Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}<br>***Swap complete***`)
 
-    utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 5 min`, "s", swapID)
-    setTimeout(getRefund, 1000*60*5, swapID)
+        
+        /*{
+            utils.SwapLog(`Refund (${ctx.sell_coin}) transaction was sent. txid: ${txid}<br>***Swap complete***`, "s")
+
+            if (!!g_Transactions[swapID])
+            {
+                delete g_Transactions[swapID];
+                utils.DeleteObjectFromDB(`swap_sell_${swapID}`)
+            }
+            return; //Refund done
+        }*/
+
+        utils.SwapLog(`Error: Refund (${ctx.sell_coin}) transaction was not sent. Will try again after 5 min`, "s", swapID)
+        setTimeout(getRefund, 1000*60*5, swapID)
+
+    }
+    catch(e) {
+        console.log(e)
+        utils.SwapLog(e.message, "e", swapID);
+        setTimeout(getRefund, 1000*60*5, swapID)
+    }
 
 }
 
@@ -552,7 +582,10 @@ async function WaitSharedBalance(swapID)
     g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
     
     if (!g_Transactions[swapID])
-        return;
+        return utils.SwapLog(`Stop waiting because invalid swapID (${swapID})`, "s", swapID)
+
+    if (!!g_Transactions[swapID]["got_shared_balance"])
+        return utils.SwapLog(`Stop waiting because shared balance was found before`, "s", swapID)
 
     //g_Transactions[swapID]["WaitSharedBalance"] = true;
 
@@ -564,15 +597,15 @@ async function WaitSharedBalance(swapID)
     {
         const balance = await txmr.GetBalance(sharedMoneroAddress);    
 
-        if (balance.confirmed < ctx.buy_amount) 
+        if (balance.confirmed/10000 < ctx.buy_amount) 
             return setTimeout(WaitSharedBalance, 1000*60, swapID)
 
-        //g_Transactions[swapID]["status"] = 75;
+        g_Transactions[swapID]["got_shared_balance"] = true;
         UpdateSwap(swapID, "status", 75)
         utils.SwapLog(`Got shared balance ${balance.confirmed/1000000000000} txmr. Send secret to buyer`, "s", swapID)
     }
     else
-        return;
+        return utils.SwapLog(`Stop waiting because invalid buy coin ("${ctx.buy_coin}" instead of "txmr")`, "s", swapID)
 
     const swapContext = {
         infoSecret: ctx.privateSecretForSell
@@ -596,13 +629,13 @@ async function WaitSharedBalance(swapID)
         }
     )
 
-    if (!sellTransaction || !sellTransaction.result)
+    /*if (!sellTransaction || !sellTransaction.result)
     {
         utils.SwapLog(`Buyer returned error: ${sellTransaction.message}. Will wait 5 min and then try again`, "s", swapID)
         setTimeout(WaitSharedBalance, 1000*60, swapID)
-    }
+    }*/
 
-    utils.SwapLog(`Waiting swap transaction from buyer (${ctx.sell_coin})`, "s", swapID)
+    //utils.SwapLog(`Waiting swap transaction from buyer (${ctx.sell_coin})`, "s", swapID)
 }
 
 async function WaitSellTransaction(swapID)
@@ -632,59 +665,67 @@ async function WaitSellTransaction(swapID)
     //const tmp = utils.GetObjectFromDB(`swap${swapID}`)
     //if (JSON.stringify(g_Transactions[swapID]) != JSON.stringify(tmp))
     //    alert("fail!")
-    g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
-
-
-    //if (!g_Transactions[swapID] || !!g_Transactions[swapID]["WaitSellTransaction"])
-    if (!g_Transactions[swapID])
-        return;
-
-    //g_Transactions[swapID]["WaitSellTransaction"] = true;
-
-    const ctx = g_Transactions[swapID];
-    const txFirst = bitcoin.Transaction.fromHex(ctx.firstTransaction);
-
-    await common.broadcast(ctx.firstTransaction, ctx.sell_coin, false)
-
-    const coin = ctx.sell_coin;
-
-    const check = await common.CheckSpent(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), txFirst.getHash().toString("hex"), coin)
-
-    if (!check.result || !check.spent)
-        return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not spent
- 
-    const check2 = await common.GetHistory(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), coin)
-    if (!check2.result || !check2.txs.length)
-        return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not spent
-
-    console.log("Seems spent first transaction "+txFirst.getHash().reverse().toString("hex"));
-
-    let txs = [];
-    for (let i=0; i<check2.txs.length; i++)
-    {
-        if (check2.txs[i].tx_hash != txFirst.getHash().reverse().toString("hex") && !txs.length)
-            continue;
-
-        txs.push(check2.txs[i].tx_hash)
-    }
-
-    if (txs.length <= 1)
-        return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //seems not refunded yet
-    
-    //Seems Got SELL TRANSACTION!
-
-    let refundXMR = null;
-    if (ctx.buy_coin == "txmr")
-        refundXMR = txmr.getLastKnownAddress().address
-
-    if (!refundXMR)
-        return utils.SwapLog(`Invalid coin ${ctx.buy_coin}`, "s", swapID)
-
-    //g_Transactions[swapID]["status"] = 90
-    UpdateSwap(swapID, "status", 90)
-    utils.SwapLog(`Got swap transaction from buyer. Try to get ${ctx.buy_amount/100000000} ${ctx.buy_coin} to ${refundXMR}`, "s", swapID)
-
     try {
+        g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
+
+        if (!g_Transactions[swapID])
+            return utils.SwapLog(`Stop waiting because invalid swapID (${swapID})`, "s", swapID)
+
+        const ctx = g_Transactions[swapID];
+        const txFirst = bitcoin.Transaction.fromHex(ctx.firstTransaction);
+
+        common.broadcast(ctx.firstTransaction, ctx.sell_coin, false)
+
+        if (!g_Transactions[swapID]["got_shared_balance"])
+            return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not ready
+
+        utils.SwapLog(`Try to process the shared balance.`, "s", swapID)
+
+        const coin = ctx.sell_coin;
+
+        const check = await common.CheckSpent(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), txFirst.getHash().toString("hex"), coin)
+
+        if (!check.result || !check.spent)
+        {
+            utils.SwapLog(`Buyer's transaction not found. Wait 1 min.`, "s", swapID)
+            return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not spent
+        }
+    
+        const check2 = await common.GetHistory(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), coin)
+        if (!check2.result || !check2.txs.length)
+        {
+            utils.SwapLog(`Buyer's transaction not found. Wait 2 min.`, "s", swapID)
+            return setTimeout(WaitSellTransaction, 1000*60*2, swapID) //not spent
+        }
+
+        console.log("Seems spent first transaction "+txFirst.getHash().reverse().toString("hex"));
+        utils.SwapLog(`Buyer's transaction detected.`, "s", swapID)
+
+        let txs = [];
+        for (let i=0; i<check2.txs.length; i++)
+        {
+            if (check2.txs[i].tx_hash != txFirst.getHash().reverse().toString("hex") && !txs.length)
+                continue;
+
+            txs.push(check2.txs[i].tx_hash)
+        }
+
+        if (txs.length <= 1)
+            return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //seems not refunded yet
+        
+        //Seems Got SELL TRANSACTION!
+
+        let refundXMR = null;
+        if (ctx.buy_coin == "txmr")
+            refundXMR = txmr.getLastKnownAddress().address
+
+        if (!refundXMR)
+            return utils.SwapLog(`Invalid coin ${ctx.buy_coin}`, "s", swapID)
+
+        //g_Transactions[swapID]["status"] = 90
+        UpdateSwap(swapID, "status", 90)
+        utils.SwapLog(`Got swap transaction from buyer. Try to get ${ctx.buy_amount/100000000} ${ctx.buy_coin} to ${refundXMR}`, "s", swapID)
+
         for (let i=1; i<txs.length; i++)
         {
             const sigs = await common.GetSignatureFromTX(txs[i], coin)
@@ -706,13 +747,13 @@ async function WaitSellTransaction(swapID)
                 continue;
 
             g_Transactions[swapID] = utils.GetObjectFromDB(`swap_sell_${swapID}`);
-            if (!g_Transactions[swapID])
-                return;
+            if (!g_Transactions[swapID]) throw new Error("Invalid transaction ID")
                         
             //g_Transactions[swapID]["got_checked_swap"] = true;
             //utils.SaveObjectToDB(g_Transactions[swapID], `swap_sell_${swapID}`)
             UpdateSwap(swapID, "got_checked_swap", true)
 
+            utils.SwapLog(`Try to get money from shared address<br>address: ${checkAddress.address}<br>private spend key: ${checkAddress.privSpentKey}<br>private view key: ${checkAddress.privViewKey}`, "s", swapID)
             const ret = await common.RefundMonero(checkAddress, refundXMR, ctx.buy_amount, ctx.buy_coin, swapID)
             
             if (!ret || !ret.result) //Try get refund until success
@@ -732,6 +773,7 @@ async function WaitSellTransaction(swapID)
             }
             break;*/
         }
+        utils.SwapLog("Something wrong with signature checking", "s", swapID)
     }
     catch(e) {
         console.log(e)

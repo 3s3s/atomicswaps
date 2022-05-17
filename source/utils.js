@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use strict';
 
 const g_crypto = require('crypto');
@@ -27,6 +28,15 @@ exports.setPassword = function(password)
 exports.getPassword = function()
 {
   return g_PASSWORD;
+}
+
+exports.getMnemonic = function()
+{
+  if (typeof window === 'undefined') return;
+
+  const $ = require('jquery');
+
+  return $("#wallet_seed").val();
 }
 
 exports.Hash160 = function(arg, encode = null)
@@ -249,9 +259,9 @@ exports.SaveOrderToDB = function(_order, uid, insertonly = false)
   const order = _order;
 
   return new Promise(async ok => {
-    const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(uid)+"' AND sell_coin='"+escape(order.sell_coin)+"'")
+    const exist = await g_constants.dbTables["orders"].Select("*", "uid='"+escape(uid)+"' ")
     if (exist && exist.length)
-      return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
+      return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(), sell_coin: order.sell_coin, uid: uid});
 
     g_constants.dbTables["orders"].Insert(
         uid, 
@@ -264,7 +274,7 @@ exports.SaveOrderToDB = function(_order, uid, insertonly = false)
         JSON.stringify(order),
         1, 
         async ret => {
-          return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin, uid: uid});
+          return insertonly ? ok() : ok({result: true, orders: await exports.GetOrdersFromDB(), sell_coin: order.sell_coin, uid: uid});
         })
   })
 
@@ -272,6 +282,45 @@ exports.SaveOrderToDB = function(_order, uid, insertonly = false)
   {
     return {result: true, orders: [], sell_coin: order.sell_coin}
   }
+}
+
+exports.HandleListOrders = async function(params)
+{
+    try {
+        return {result: true, orders: await exports.GetOrdersFromDB(), sell_coin: params.coin};
+    }
+    catch(e) {
+        console.log(e);
+        return null;
+    }
+}
+
+exports.HandleInviteBuyer = async function(params)
+{
+  try {
+    const check = exports.VerifySignature(params.request, params.sign)
+    if (!check)
+        return {result: false, message: "Signature error"};
+
+    let _order = JSON.parse(params.request);
+    _order["request"] = params.request;
+    _order["sign"] = params.sign;
+    
+    const myOrder = p2p_orders.getMyOrder(_order["orderUID_buyer"]);
+
+    if (myOrder == null) return null;
+
+    const ret = await p2p_orders.InitBuyOrder(exports.getMnemonic(), _order.orderUID, _order.sell_coin, _order.seller_pubkey, _order.sell_amount, _order.buy_amount, _order.buy_coin) 
+
+    await p2p_orders.DeleteOrder(_order["orderUID_buyer"], _order.buy_coin);
+
+    return ret;
+  }
+  catch(e){
+    console.log(e)
+    return {result: false, message: e.message};
+  }
+
 }
 
 exports.DeleteOrderFromDB = async function(params)
@@ -282,13 +331,16 @@ exports.DeleteOrderFromDB = async function(params)
   try {
       const check = exports.VerifySignature(params.request, params.sign)
       if (!check)
+      {
+          console.log("ERROR: DeleteOrderFromDB Signature error")
           return {result: false, message: "Signature error"};
+      }
 
       const order = JSON.parse(params.request);
 
-      g_constants.dbTables["orders"].Update("active=0", `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}'`);
+      g_constants.dbTables["orders"].Update("active=0", `uid='${escape(order.uid)}'`);
 
-      return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
+      return {result: true, orders: await exports.GetOrdersFromDB(), sell_coin: order.sell_coin};
   }
   catch(e) {
       console.log(e);
@@ -297,7 +349,7 @@ exports.DeleteOrderFromDB = async function(params)
 
   async function DeleteOrderFromBrowserDB(params)
   {
-    const orders = await exports.GetOrdersFromDB(params.sell_coin);
+    const orders = await exports.GetOrdersFromDB();
 
     if (!orders[params.uid])
       return;
@@ -305,6 +357,8 @@ exports.DeleteOrderFromDB = async function(params)
     orders[params.uid].active = 0;
 
     exports.SaveOrdersToDB(orders, params.sell_coin)
+
+    tab_orders.UpdateOrdersTable()
   }
 }
 
@@ -329,7 +383,7 @@ exports.RefreshOrderInDB = async function(params)
 
       g_constants.dbTables["orders"].Update(`time=${escape(order.time)}, json='${escape(JSON.stringify(order))}'`, `seller_pubkey='${escape(order.seller_pubkey)}' AND uid='${escape(order.uid)}' AND active=1`);
 
-      return {result: true, orders: await exports.GetOrdersFromDB(order.sell_coin), sell_coin: order.sell_coin};
+      return {result: true, orders: await exports.GetOrdersFromDB(), sell_coin: order.sell_coin};
   }
   catch(e) {
       console.log(e);
@@ -399,22 +453,33 @@ exports.SaveOrdersToDB = function(objOrders, sell_coin)
   }
 }
 
-exports.GetOrdersFromDB = async function(sell_coin)
+exports.GetOrdersFromDB = async function()
 {
   if (typeof window !== 'undefined')
-    return GetOrdersFromBrowserDB(sell_coin);
+    return GetOrdersFromBrowserDB();
 
   g_constants.dbTables["orders"].Delete("time<"+(Date.now() - 10*60*1000));
 
-  const rows = await g_constants.dbTables["orders"].Select("*", "sell_coin='"+escape(sell_coin)+"' AND active=1", "ORDER BY sell_amount DESC LIMIT 100")
+  const rows = await g_constants.dbTables["orders"].Select("*", `active=1`, "ORDER BY sell_amount DESC LIMIT 100")
 
   return rows;
 
-  function GetOrdersFromBrowserDB(sell_coin)
+  function GetOrdersFromBrowserDB()
   {
     let ret = {};
 
-    const orders = exports.storage.getItem("orders_"+sell_coin);
+    let allOrders = {};
+    for(let key in localStorage) 
+    {
+        if (key.indexOf("orders_") == 0)
+        {
+          const orders = exports.storage.getItem(key);
+          for (let k in orders)
+            allOrders[k] = orders[k]
+        }
+    }  
+
+    const orders = allOrders; //exports.storage.getItem("orders_"+sell_coin);
     if (!orders) return ret;
 
     for (let key in orders)

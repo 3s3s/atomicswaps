@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use strict';
 
 const p2p = require("p2plib");
@@ -27,13 +28,15 @@ exports.HandleMessage = async function(message)
     {
         if (message.params["coin"] == "tbtc")
             answer = await require("../../wallets/bitcoin_test/orders").HandleCreateOrder(message.params)
+        if (message.params["coin"] == "txmr")
+            answer = await require("../../wallets/monero_test/orders").HandleCreateOrder(message.params)
     }
 
     if (message.params["command"] == "listOrders")
-    {
-        if (message.params["coin"] == "tbtc")
-            answer = await require("../../wallets/bitcoin_test/orders").HandleListOrders(message.params)
-    }
+        answer = await utils.HandleListOrders(message.params)
+    if (message.params["command"] == "InviteBuyer")
+        answer = await utils.HandleInviteBuyer(message.params)
+        
 
     if (message.params["command"] == "deleteOrder" && message.params.request && message.params.sign)
         answer = await utils.DeleteOrderFromDB(message.params)
