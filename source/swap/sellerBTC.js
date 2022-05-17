@@ -597,7 +597,7 @@ async function WaitSharedBalance(swapID)
     {
         const balance = await txmr.GetBalance(sharedMoneroAddress);    
 
-        if (balance.confirmed/10000 < ctx.buy_amount) 
+        if (!balance || !balance.confirmed || balance.confirmed/10000 < ctx.buy_amount) 
             return setTimeout(WaitSharedBalance, 1000*60, swapID)
 
         g_Transactions[swapID]["got_shared_balance"] = true;
