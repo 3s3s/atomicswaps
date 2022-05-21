@@ -679,7 +679,7 @@ async function WaitSellTransaction(swapID)
         if (!g_Transactions[swapID]["got_shared_balance"])
             return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not ready
 
-        utils.SwapLog(`Try to process the shared balance.`, "s", swapID)
+        utils.SwapLog(`Try to process the shared balance. Check for spent the first transaction`, "s", swapID)
 
         const coin = ctx.sell_coin;
 
@@ -691,6 +691,8 @@ async function WaitSellTransaction(swapID)
             return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //not spent
         }
     
+        utils.SwapLog(`Checking transactions history`, "s", swapID)
+        
         const check2 = await common.GetHistory(utils.Hash256(txFirst.outs[1].script.toString("hex"), "hex", true), coin)
         if (!check2.result || !check2.txs.length)
         {

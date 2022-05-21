@@ -1,4 +1,8 @@
 "use strict";
+const P2P = require("p2plib"); 
+
+// @ts-ignore
+global.p2p = new p2plib()
 
 document.addEventListener('DOMContentLoaded', async () => {
 

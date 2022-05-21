@@ -1,17 +1,20 @@
 "use strict";
 const g_constants = require("../constants")
-const utils = require("../utils")
+const P2P = require("p2plib");
 
-const customHandlers = {
-    custom: require("./p2p/custom"),
+const options = {
     SSL_options: g_constants.SSL_options,
     seeders: ["82.118.22.155:10443"]
 }
 
 require("./database").Init();
-// @ts-ignore
-require("p2plib").StartServer(customHandlers);    
 
+// @ts-ignore
+global.p2p = new p2plib(false);
+
+p2p.StartServer(options)
+
+const utils = require("../utils")
 setInterval(() => {
     const sell_coins = ["tbtc"];
 

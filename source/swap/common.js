@@ -350,7 +350,7 @@ exports.CheckSpent = function(scriptpubkey, txHash, coin)
                 }
             }
         );    
-    })
+    }, reject => {reject ({result: false, message: "p2plib error"})})
 }
 
 exports.GetSignatureFromTX = function(txHash, coin)

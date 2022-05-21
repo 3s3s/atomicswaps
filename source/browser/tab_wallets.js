@@ -2,7 +2,7 @@
 "use strict";
 
 const mn = require('electrum-mnemonic')
-const p2p = require("p2plib");
+//const p2p = require("p2plib");
 const txmr = require("../wallets/monero_test/utils")
 const tbtc = require("../wallets/bitcoin_test/utils")
 const p2p_orders = require("../server/p2p/orders")

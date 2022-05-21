@@ -1,122 +1,83 @@
 // @ts-nocheck
 'use strict';
 
-const p2p = require("p2plib");
 const utils = require("../../utils")
 const orders = require("./orders.js")
 
-let g_Callbacks = {};
+exports.SendMessage = p2p.SendMessage;
 
-exports.HandleMessage = async function(message)
+p2p.on("electrum", async params => 
 {
-    if (!message["params"] || !message.params["command"] || !message.params["uid"])
-        return;
-
     let answer = null;
+    if (params["coin"] == "tbtc")
+        answer = await require("../../wallets/bitcoin_test/utils").Electrum(params)
 
-    if (message.params["command"] == "electrum")
-    { 
-        if (message.params["coin"] == "tbtc")
-            answer = await require("../../wallets/bitcoin_test/utils").Electrum(message.params)
-    }
-    if (message.params["command"] == "monerod")
-    { 
-        if (message.params["coin"] == "txmr")
-            answer = await require("../../wallets/monero_test/utils").Wallet(message.params)
-    }
-    if (message.params["command"] == "new_order")
+    return p2p.ProcessAnswer(params, answer)
+})
+
+p2p.on("monerod", async params => 
+{
+    let answer = null;
+    if (params["coin"] == "txmr")
+        answer = await require("../../wallets/monero_test/utils").Wallet(params)
+
+    return p2p.ProcessAnswer(params, answer)
+})
+
+p2p.on("new_order", async params => 
+{
+    let answer = null;
+    if (params["coin"] == "tbtc")
+        answer = await require("../../wallets/bitcoin_test/orders").HandleCreateOrder(params)
+    if (params["coin"] == "txmr")
+        answer = await require("../../wallets/monero_test/orders").HandleCreateOrder(params)
+
+    return p2p.ProcessAnswer(params, answer)
+})
+
+p2p.on("listOrders", async params => 
+{
+    return p2p.ProcessAnswer(params, await utils.HandleListOrders(params))
+})
+
+p2p.on("InviteBuyer", async params => 
+{
+    return p2p.ProcessAnswer(params, await utils.HandleInviteBuyer(params))
+})
+
+p2p.on("deleteOrder", async params => 
+{
+    return p2p.ProcessAnswer(params, await utils.DeleteOrderFromDB(params))
+})
+
+p2p.on("refreshOrder", async params => 
+{
+    return p2p.ProcessAnswer(params, await utils.RefreshOrderInDB(params))
+})
+
+p2p.on("InitBuyOrder", async params => 
+{
+    return p2p.ProcessAnswer(params, await utils.InitBuyOrder(params))
+})
+
+p2p.on("getAdaptorSignatureFromBuyer", params => 
+{
+    return p2p.ProcessAnswer(params, orders.getAdaptorSignatureFromBuyer(params))
+})
+
+
+p2p.on("getSwapTransactionFromBuyer", async params => 
+{
+    return p2p.ProcessAnswer(params, await orders.getSwapTransactionFromBuyer(params))
+})
+
+p2p.on("answer", params => 
+{
+    if (params.values)
     {
-        if (message.params["coin"] == "tbtc")
-            answer = await require("../../wallets/bitcoin_test/orders").HandleCreateOrder(message.params)
-        if (message.params["coin"] == "txmr")
-            answer = await require("../../wallets/monero_test/orders").HandleCreateOrder(message.params)
+        params.values = params.serverKey && params.serverKey == require("../../constants").clientDHkeys.server_pub ? 
+            require("../../utils").ClientDH_Decrypt(params.values) : params.values;
     }
-
-    if (message.params["command"] == "listOrders")
-        answer = await utils.HandleListOrders(message.params)
-    if (message.params["command"] == "InviteBuyer")
-        answer = await utils.HandleInviteBuyer(message.params)
-        
-
-    if (message.params["command"] == "deleteOrder" && message.params.request && message.params.sign)
-        answer = await utils.DeleteOrderFromDB(message.params)
-
-    if (message.params["command"] == "refreshOrder" && message.params.request && message.params.sign)
-        answer = await utils.RefreshOrderInDB(message.params)
     
-    if (message.params["command"] == "InitBuyOrder" && message.params.request && message.params.sign)
-        answer = await utils.InitBuyOrder(message.params)
-    if (message.params["command"] == "getAdaptorSignatureFromBuyer" && message.params.request && message.params.sign)
-        answer = await orders.getAdaptorSignatureFromBuyer(message.params)
-    if (message.params["command"] == "getSwapTransactionFromBuyer" && message.params.request && message.params.sign)
-        answer = await orders.getSwapTransactionFromBuyer(message.params)
-  
-        
-    if (answer != null)
-    {
-        p2p.broadcastMessage({
-            request: "custom", 
-            params: {
-                destination: message.params["uid"], 
-                command: "answer", 
-                serverKey: message.params.serverKey || false, 
-                values: answer
-            }
-        });
-    }
-
-    /*if (message.params["command"] == "answer" && typeof window !== 'undefined')
-    {
-        console.log("Got answer "+message.params.destination)
-    }*/
-
-    if (message.params["command"] == "answer" && g_Callbacks[message.params.destination] !== undefined && message.params.values)
-    {
-        const values = message.params.serverKey && message.params.serverKey == require("../../constants").clientDHkeys.server_pub ? 
-            require("../../utils").ClientDH_Decrypt(message.params.values) : message.params.values;
-
-        try {
-            g_Callbacks[message.params.destination].callback(values);
-        }
-        catch(e) {}
-        delete g_Callbacks[message.params.destination];
-    }
-
-    return FreeMemory();     
-}
-
-exports.SendMessage = function(params, callback)
-{
-    const connected = p2p.GetConnectedPeers();
-
-    if (!connected.length)
-        return setTimeout(exports.SendMessage, 50000, params, callback)
-
-    const message = {request: "custom", params: params}
-    const uid = p2p.broadcastMessage(message);
-
-    if (uid) g_Callbacks[uid] = {callback: callback, time: Date.now()};
-
-    FreeMemory();
-}
-
-async function FreeMemory()
-{
-    const date = Date.now();
-
-    let tmp = {}
-    for (let key in g_Callbacks)
-    {
-        if (g_Callbacks[key] && g_Callbacks[key].time < date - 3*60*1000)
-        {
-            try {
-                await g_Callbacks[key].callback({__result__: false, __message__: "p2plib timeout"});
-            }
-            catch(e)
-            {}
-            continue;
-        }
-        tmp[key] = g_Callbacks[key];
-    }
-    g_Callbacks = tmp;
-}
+    return p2p.ProcessAnswer(params)
+})

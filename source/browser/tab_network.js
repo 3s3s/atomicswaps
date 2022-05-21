@@ -1,49 +1,36 @@
+// @ts-nocheck
 "use strict";
 
 const $ = require('jquery');
-const p2p = require("p2plib"); 
-const customP2P = require("../server/p2p/custom");
 const tab_wallet = require("./tab_wallets")
 
-const P2P_PROTOCOL = {
-    custom: customP2P,
-    STARTED: false
-}
 
 exports.Init = function()
 {
-    ConnectP2P();
+    p2p.StartPeer();
     
     UpdatePeers();
     
     setInterval(UpdatePeers, 10000)
 }
 
-function ConnectP2P()
-{
-    P2P_PROTOCOL.STARTED = true;
-
-    p2p.StartPeer(P2P_PROTOCOL);
-}
 
 $("#network-start").on("click", e => 
 {
-    P2P_PROTOCOL.STARTED = !P2P_PROTOCOL.STARTED;
-
-    p2p.StartPeer(P2P_PROTOCOL);
+    p2p.IsStarted() ? p2p.StopPeer() : p2p.StartPeer()
 
     UpdatePeers();
 })
 
 async function UpdatePeers()
 {
-    $("#network-start").text(P2P_PROTOCOL.STARTED ? "Stop" : "Start")
+    $("#network-start").text(p2p.IsStarted() ? "Stop" : "Start")
 
     const connected = p2p.GetConnectedPeers();
     const saved = await p2p.GetLastSavedPeers(); //await utils.GetPeersFromDB();
 
     $("#network-status").empty();
-    if (!P2P_PROTOCOL.STARTED)
+    if (!p2p.IsStarted())
         $("#network-status").append($("<span class='text-danger'>Offline</span>"))
     else 
     {
