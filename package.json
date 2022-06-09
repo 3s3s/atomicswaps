@@ -25,7 +25,6 @@
     "jquery": "^3.6.0",
     "keccak256": "latest",
     "libsodium-wrappers-sumo": "^0.7.9",
-    "monero-javascript": "^0.6.4",
     "multicoinjs-lib": "^5.0.5",
     "node-fetch": "^2.6.7",
     "os-browserify": "^0.3.0",

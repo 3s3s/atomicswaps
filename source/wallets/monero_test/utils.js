@@ -33,10 +33,10 @@ exports.Wallet = async function(params)
     let RPC = false;
     try {
         RPC = require("../../private").RPC.txmr || false;
-        if (!RPC) return ok(null);
+        if (!RPC) return null;
     }
     catch(e) {
-        return ok(null);
+        return null;
     }
     return new Promise(ok => {        
         require('fs').mkdir(__dirname+"/.wallets/", async err => {
