@@ -1,7 +1,5 @@
 # Atomic swap client and server in node.js
 
-Live version: https://3s3s.github.io/atomicswaps/browser/html/popup.html
-
 Step-by-step install instructions:
 
 1. Install nvm
