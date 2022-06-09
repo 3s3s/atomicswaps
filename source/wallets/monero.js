@@ -11,11 +11,11 @@ const EdDSA = elliptic.eddsa;
 const ed25519 = new EdDSA('ed25519');
 const secp256k1 = new EC('secp256k1');
 
-
 const NETWORKS = {
     testnet: 0x35,
     stagenet: 24,
-    main: 0x12
+    main: 0x12,
+    usdx: 0xb4
 }
 
 const _sodium = require('libsodium-wrappers-sumo');
@@ -35,6 +35,16 @@ let g_CurrentNetwork = NETWORKS.stagenet;
 exports.getNetwork = function()
 {
     return g_CurrentNetwork;
+}
+exports.setNetwork = function(network)
+{
+    if (network == NETWORKS.testnet || 
+        network == NETWORKS.stagenet ||
+        network == NETWORKS.main ||
+        network == NETWORKS.usdx)
+    {
+        g_CurrentNetwork = network;
+    }
 }
 
 
@@ -126,7 +136,10 @@ class MoneroAddress {
     }
     GetAddressHex()
     {
-        const addressStart = Buffer.concat([Buffer.from([this.#network]), this.#publicSpentKey, this.#publicViewKey])
+        const addressStart = this.#network < 0x80 ? 
+            Buffer.concat([Buffer.from([this.#network]), this.#publicSpentKey, this.#publicViewKey]) :
+            Buffer.concat([Buffer.from([this.#network]), Buffer.from([1]), this.#publicSpentKey, this.#publicViewKey]);
+        
         const addressHash = keccak256(addressStart);
 
         const addressChecksum = Buffer.from([addressHash[0], addressHash[1], addressHash[2], addressHash[3]])
@@ -152,7 +165,7 @@ class MoneroAddress {
             ret += block;
         }
 
-        let lastBlock = bs58.encode(data.subarray(64, 69));
+        let lastBlock = bs58.encode(data.subarray(64));
         while (lastBlock.length < 7)
             lastBlock = "1" + lastBlock;
     
@@ -271,8 +284,17 @@ exports.GetAddressFromPrivateKeysAB = function(privAliceView, privAliceSpent, pr
     };
 }
 
-exports.GetAddressFromString = function(str)
-{   
+exports.GetAddressFromString = function(str, network = null)
+{ 
+    if (network == null)  
+    {
+        return null;
+    }
+    if (network == "stagenet")
+        exports.setNetwork(NETWORKS.stagenet)
+    if (network == "usdx")
+        exports.setNetwork(NETWORKS.usdx)
+        
     let privKey_view = Buffer.from(utils.Hash256(str), "hex");
     let privKey_spent = Buffer.from(utils.Hash256(privKey_view.toString("hex")), "hex");
 

@@ -3,6 +3,7 @@
 const BN = require('bn.js');
 const tbtc_utils = require("../../wallets/bitcoin_test/utils")
 const txmr_utils = require("../../wallets/monero_test/utils")
+const usdx_utils = require("../../wallets/usdx/utils")
 const monero = require("../../wallets/monero")
 const utils = require("../../utils")
 const customP2P = require("./custom")
@@ -25,7 +26,7 @@ exports.CreateOrder = async function(mnemonic, sell_amount, buy_amount, sell_coi
     const addressMonero = await txmr_utils.GetAddress(mnemonic)
     const orderMnemonic = utils.Hash160(mnemonic+Math.random());
 
-    const swapContext = swap.InitContext(orderMnemonic);
+    const swapContext = swap.InitContext(buy_coin, orderMnemonic);
 
 
     const order = {
@@ -50,8 +51,6 @@ exports.CreateOrder = async function(mnemonic, sell_amount, buy_amount, sell_coi
         {
             try { 
                 result["seller_pubkey"] = order.seller_pubkey;
-
-                //const myMoneroAddress = await monero.GetAddressFromString(address.privateKey.toString("hex")+Math.random())
 
                 g_myOrders[result.uid] = {order: order, addressBTC: addressBTC, swapContext: swapContext};
 
@@ -184,10 +183,8 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
 
     if (!!g_Swaps[orderMnemonic]) return {result: false, message: "The order is already init"}
     
-    g_Swaps[orderMnemonic] = swap.InitContext(orderMnemonic);
+    g_Swaps[orderMnemonic] = swap.InitContext(buy_coin, orderMnemonic);
     
-    //const address = await monero.GetAddressFromString(orderMnemonic);
-
     const addressBuyerBTC = tbtc_utils.GetAddress(mnemonic);
 
     const keys = utils.genKeysDLEQ(g_Swaps[orderMnemonic].getSpentPair().priv); 
@@ -203,10 +200,12 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
     //////////////
 
     let addressXMR = null;
-    if (monero.getNetwork() == 24)
+    if (buy_coin == "txmr")
         addressXMR = (await txmr_utils.GetAddress(mnemonic))
-    if (monero.getNetwork() == 0x12)
+    if (buy_coin == "xmr")
         addressXMR = (await xmr_utils.GetAddress(mnemonic))
+    if (buy_coin == "usdx")
+        addressXMR = (await usdx_utils.GetAddress(mnemonic))
 
     if (!addressXMR)
         return {result: false, message: "XMR network undefined"}

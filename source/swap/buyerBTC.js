@@ -8,7 +8,7 @@ const multicoin = require("multicoinjs-lib");
 const monero = require("../wallets/monero")
 const txmr = require("../wallets/monero_test/utils")
 const BN = require('bn.js');
-const { DEFAULT_CHECK_CONNECTION_PERIOD } = require("monero-javascript/src/main/js/common/MoneroConnectionManager");
+//const { DEFAULT_CHECK_CONNECTION_PERIOD } = require("monero-javascript/src/main/js/common/MoneroConnectionManager");
 const EC = require('elliptic').ec
 const EdDSA = require('elliptic').eddsa;
 

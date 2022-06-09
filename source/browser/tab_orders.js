@@ -3,6 +3,7 @@
 
 const tbtc = require("../wallets/bitcoin_test/utils")
 const txmr = require("../wallets/monero_test/utils")
+const usdx = require("../wallets/usdx/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
 const common = require("./common")
@@ -158,6 +159,15 @@ function HaveBalance(mnemonic, buy_coin, buy_amount)
             const addressTXMR = await txmr.GetAddress(mnemonic)
             txmr.GetBalance(addressTXMR, balance => {
                 if (buy_amount / 100000000 >= (balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0) return ok(false)
+                return ok (true)
+            })
+            
+        }
+        if (buy_coin == "usdx")
+        {
+            const addressUSDX = await usdx.GetAddress(mnemonic)
+            usdx.GetBalance(addressUSDX, balance => {
+                if (buy_amount / 100000000 >= (balance.confirmed / 100).toFixed(2)*1.0 || 0) return ok(false)
                 return ok (true)
             })
             

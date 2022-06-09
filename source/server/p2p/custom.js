@@ -24,6 +24,15 @@ p2p.on("monerod", async params =>
     return p2p.ProcessAnswer(params, answer)
 })
 
+p2p.on("usdxd", async params => 
+{
+    let answer = null;
+    if (params["coin"] == "usdx")
+        answer = await require("../../wallets/usdx/utils").Wallet(params)
+
+    return p2p.ProcessAnswer(params, answer)
+})
+
 p2p.on("new_order", async params => 
 {
     let answer = null;

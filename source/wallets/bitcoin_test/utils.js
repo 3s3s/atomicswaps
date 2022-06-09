@@ -32,7 +32,7 @@ exports.Electrum = function(params)
                 ok( JSON.stringify(ret) ); 
         }catch(e){
             console.error(e)
-            ok(null)
+            ok({result: false, message: e.message})
         }
         await ecl.close() // disconnect(promise)*/
     })
@@ -61,6 +61,7 @@ exports.GetBalance = async function(mnemonic, callback = null)
             }
             catch(e) {
                 console.log(e)
+                ok({confirmed: 0})
             }
         });
     })
@@ -93,7 +94,7 @@ exports.listunspent = function(address)
                 try {
                     ok( JSON.parse(listStr) );
                 }
-                catch(e) {console.log(e); ok(null);}
+                catch(e) {console.log(e); ok({result: false, message: e.message});}
             })
     })
 }

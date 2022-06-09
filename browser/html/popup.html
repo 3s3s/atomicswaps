@@ -18,6 +18,21 @@
     <div class="container">
       <div class="row">
         <div class="col">
+          <div class="row g-3 align-items-center alert alert-primary">
+            <div class="col-auto">
+              <label for="blockchain" class="col-form-label">Blockchain:</label>
+            </div>
+            <div class="col-auto">
+              <select id="blockchain" class="form-select" aria-label="Mainnet/Testnet">
+                <option value="testnet" selected>Testnet</option>
+                <option value="mainnet">Mainnet</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
           <ul class="nav nav-tabs">
             <li class="nav-item">
               <button class="nav-link active" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet" type="button" role="tab" aria-controls="wallet" aria-selected="true">Wallet</button>
@@ -207,6 +222,16 @@
                               <button id="btn_monerotest_sell" type="button" class="btn btn-info btn-sm">Sell</button>
                               <button id="btn_monerotest_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
                               <button id="btn_monerotest_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
+                            </div>                          
+                          </td>
+                        </tr>
+                        <tr id="wallet_usdx">
+                          <td>USDX (mainnet)</td><td id="txt_balance_usdx">0.000000</td>
+                          <td>
+                            <div class="gap-2 d-md-flex justify-content-md-end">
+                              <button id="btn_usdx_sell" type="button" class="btn btn-info btn-sm">Sell</button>
+                              <button id="btn_usdx_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
+                              <button id="btn_usdx_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
                             </div>                          
                           </td>
                         </tr>

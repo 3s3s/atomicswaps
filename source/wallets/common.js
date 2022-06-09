@@ -13,12 +13,12 @@ const monero = require("./monero")
 class SwapContext {
     #KeyPairXMR_view = monero.KeyPair(secp256k1.genKeyPair().getPrivate().umod(ed25519.curve.n), true);
     #KeyPairXMR_spent = monero.KeyPair(secp256k1.genKeyPair().getPrivate().umod(ed25519.curve.n), true);
-    constructor(seedString = null) 
+    constructor(network, seedString = null) 
     {
         if (seedString == null)
             return;
 
-        const address = monero.GetAddressFromString(seedString);
+        const address = monero.GetAddressFromString(seedString, network);
 
         this.#KeyPairXMR_view = monero.KeyPair(Buffer.from(address.privViewKey, "hex"))
         this.#KeyPairXMR_spent = monero.KeyPair(Buffer.from(address.privSpentKey, "hex"))       
@@ -47,9 +47,11 @@ class SwapContext {
     }
 }
 
-exports.InitContext = function(seedString = null) 
+exports.InitContext = function(network = null, seedString = null) 
 {
-    return new SwapContext(seedString);
+    if (network == null) throw new Error("ERROR: Swap context init with bad network")
+    
+    return new SwapContext(network, seedString);
 }
 
 exports.parseParams = function(params)

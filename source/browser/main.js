@@ -12,3 +12,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 }, false);
 
+exports.BLOCKCHAIN = "testnet"
+
+$("#wallet_usdx").hide()
+
+$('#blockchain').on('change', function () {
+    exports.BLOCKCHAIN = $("#blockchain option:selected").val();
+    if (exports.BLOCKCHAIN != "mainnet")
+        $("#wallet_usdx").hide()
+    else
+        $("#wallet_usdx").show()
+
+});

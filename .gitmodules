@@ -1,0 +1,6 @@
+[submodule "source/wallets/monero_test/monero-javascript"]
+	path = source/wallets/monero_test/monero-javascript
+	url = https://github.com/monero-ecosystem/monero-javascript.git
+[submodule "source/wallets/usdx/usdx-javascript"]
+	path = source/wallets/usdx/usdx-javascript
+	url = https://github.com/3s3s/monero-javascript.git

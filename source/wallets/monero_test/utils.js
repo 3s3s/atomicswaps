@@ -5,7 +5,7 @@ const bitcoin = require("bitcoinjs-lib")
 const bip32 = require('bip32')
 const monero = require("../monero")
 const common = require("../common")
-const monerojs = require("monero-javascript");
+const monerojs = require("./monero-javascript/index");
 const utils = require("../../utils")
 const customP2P = require("../../server/p2p/custom")
 const g_constants = require("../../constants");
@@ -162,13 +162,12 @@ exports.Wallet = async function(params)
 let g_LastAddress = null
 exports.GetAddress = async function(mnemonic)
 {
-    //return await monero.GetAddressFromString(mnemonic);
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });
     const root = bip32.fromSeed(seed, bitcoin.networks.testnet);
 
     const privateData = root.derivePath("m/0/0").privateKey.toString("hex");
 
-    const address = monero.GetAddressFromString(privateData);
+    const address = monero.GetAddressFromString(privateData, "stagenet");
     g_LastAddress = address;
      
     return address;
@@ -218,6 +217,7 @@ exports.GetBalance = function(address, callback = null)
                 }
                 catch(e) {
                     console.log(e)
+                    ok({confirmed: 0})
                 }
             });
         })
