@@ -25,7 +25,7 @@ You can use terminal in Visual Studio Code https://code.visualstudio.com/downloa
 ```
 git clone https://github.com/3s3s/atomicswaps.git
 cd atomicswaps
-git submodule update --init --recursive
+git submodule update --init 
 npm install
 npm install -g forever
 npm install -g browserify

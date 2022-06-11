@@ -189,7 +189,7 @@ exports.GetBalance = function(address, callback = null)
             return g_LastUpdated[address.address].data;
         }
 
-        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : null
+        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : {confirmed: 0}
 
         g_LastUpdated[address.address] = {time: Date.now(), data: data};
 
@@ -217,7 +217,7 @@ exports.GetBalance = function(address, callback = null)
                 }
                 catch(e) {
                     console.log(e)
-                    ok({confirmed: 0})
+                    ok(data)
                 }
             });
         })
