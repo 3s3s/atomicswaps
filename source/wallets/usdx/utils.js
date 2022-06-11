@@ -410,10 +410,13 @@ if (monerojs.GenUtils.isBrowser())
         
         // one time initialization
         if (!monerojs.LibraryUtils.WORKER) {
-            const text = unescape(require('../monero_common/usdx_web_worker.js').STR); 
+           /*const text = unescape(require('../monero_common/usdx_web_worker.js').STR); 
             const blob = new Blob([text], {type: 'application/javascript'});
             //const url = new URL('../monero_web_worker.js');
-            monerojs.LibraryUtils.WORKER = new Worker(URL.createObjectURL(blob)); //(monerojs.LibraryUtils.WORKER_DIST_PATH);
+            monerojs.LibraryUtils.WORKER = new Worker(URL.createObjectURL(blob)); //(monerojs.LibraryUtils.WORKER_DIST_PATH);*/
+            const usdx_worker = new AtomicSwapWebWorker("usdx");
+
+            monerojs.LibraryUtils.WORKER = usdx_worker.worker;
 
             monerojs.LibraryUtils.WORKER_OBJECTS = {};  // store per object running in the worker
             
