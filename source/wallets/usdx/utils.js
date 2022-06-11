@@ -75,7 +75,7 @@ exports.Wallet = async function(params)
                     password: "supersecretpassword123",
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 }) :
-                await monerojs.createWalletFull({
+                await monerojs.createUSDXWalletFull({
                     path: walletName,
                     networkType: "mainnet",
                     password: "supersecretpassword123",
