@@ -14,13 +14,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 exports.BLOCKCHAIN = "testnet"
 
-$("#wallet_usdx").hide()
+$("#wallet_usdx").hide();
 
-$('#blockchain').on('change', function () {
+OnNetworkChange();
+
+$('#blockchain').on('change', () => {
+    OnNetworkChange()
+});
+
+function OnNetworkChange()
+{
     exports.BLOCKCHAIN = $("#blockchain option:selected").val();
     if (exports.BLOCKCHAIN != "mainnet")
         $("#wallet_usdx").hide()
     else
         $("#wallet_usdx").show()
-
-});
+}

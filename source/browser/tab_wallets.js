@@ -434,11 +434,15 @@ exports.ShowBalances = async function(force = true)
         $("#btn_bitcointest_withdraw").prop('disabled', true);
 
         $("#txt_balance_monero").empty().append($("<span class='text-danger'>Offline</span>"))
+
+        $("#txt_balance_usdx").empty().append($("<span class='text-danger'>Offline</span>"))
+
         if (!g_offline)
         {
             g_offline = true;
             return setTimeout(exports.ShowBalances, 5000)
         }
+
         return;
     }
     if (!force && !g_offline)
@@ -453,6 +457,7 @@ exports.ShowBalances = async function(force = true)
 
     $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
     $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
+    $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
 
     if (main.BLOCKCHAIN == "testnet")
     {

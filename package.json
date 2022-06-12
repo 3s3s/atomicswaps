@@ -31,7 +31,7 @@
     "nock": "^13.2.6",
     "node-fetch": "^2.6.7",
     "os-browserify": "^0.3.0",
-    "p2plib": "^1.0.81",
+    "p2plib": "^1.0.83",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",
     "querystring-es3": "^0.2.1",
