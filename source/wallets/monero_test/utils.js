@@ -336,7 +336,7 @@ async function processWithdraw(address, balance, address_to, amount)
                     //const signedTxHex = await offlineWallet.signTxs(unsignedTx.getTxSet().getUnsignedTxHex());
                     const signedTxHex = await offlineWallet.signTxs(unsignedTx.unsignedTxHex);
 
-                    return ok({result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee, raw: signedTxHex});
+                    return ok({result: true, amount: (amount*1000000000000)/10000, address_to: address_to, fee: fee/10000, raw: signedTxHex});
                 }
                 catch(e) {
                     console.log(e)

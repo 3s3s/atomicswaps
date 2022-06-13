@@ -476,10 +476,10 @@ exports.ShowBalances = async function(force = true)
             $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
         })
         
-        const addressTXMR = await txmr.GetAddress(mnemonic)
+        /*const addressTXMR = await txmr.GetAddress(mnemonic)
         txmr.GetBalance(addressTXMR, balance => {
             $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0);
-        })
+        })*/
 
         const addressUSDX = await usdx.GetAddress(mnemonic)
         usdx.GetBalance(addressUSDX, balance => {

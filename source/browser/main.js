@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 exports.BLOCKCHAIN = "testnet"
 
 $("#wallet_usdx").hide();
+$("#wallet_txmr").hide();
+$("#wallet_tbtc").hide();
+$("#wallet_xmr").hide();
+$("#wallet_btc").hide();
 
 OnNetworkChange();
 
@@ -26,7 +30,21 @@ function OnNetworkChange()
 {
     exports.BLOCKCHAIN = $("#blockchain option:selected").val();
     if (exports.BLOCKCHAIN != "mainnet")
-        $("#wallet_usdx").hide()
+    {
+        $("#wallet_usdx").hide();
+        $("#wallet_xmr").hide();
+        $("#wallet_btc").hide();
+        
+        $("#wallet_txmr").show()
+        $("#wallet_tbtc").show()
+    }
     else
+    {
+        $("#wallet_txmr").hide()
+        $("#wallet_tbtc").hide()
+
         $("#wallet_usdx").show()
+        $("#wallet_xmr").show()
+        $("#wallet_tbtc").show()
+    }
 }
