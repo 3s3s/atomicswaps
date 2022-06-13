@@ -168,7 +168,7 @@ class MoneroAddress {
         const lastBytes = data.subarray(64);
 
         let lastBlock = bs58.encode(lastBytes);
-        while (lastBlock.length < (lastBytes == 5 ? 7 : 9))
+        while (lastBlock.length < (lastBytes.length == 5 ? 7 : 9))
             lastBlock = "1" + lastBlock;
     
         return ret + lastBlock;
