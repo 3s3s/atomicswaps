@@ -166,8 +166,12 @@ exports.Wallet = async function(params)
 }
 
 let g_LastAddress = null
+let mapMnemonicToAddtess = {}
 exports.GetAddress = async function(mnemonic)
 {
+    if (!!mapMnemonicToAddtess[mnemonic])
+        return mapMnemonicToAddtess[mnemonic];
+
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });
     const root = bip32.fromSeed(seed, bitcoin.networks.testnet);
 
@@ -176,6 +180,7 @@ exports.GetAddress = async function(mnemonic)
     const address = monero.GetAddressFromString(privateData, "usdx");
     g_LastAddress = address;
      
+    mapMnemonicToAddtess[mnemonic] = address;
     return address;
 }
 exports.getLastKnownAddress = function()

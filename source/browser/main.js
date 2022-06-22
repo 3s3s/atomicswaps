@@ -47,4 +47,5 @@ function OnNetworkChange()
         $("#wallet_xmr").show()
         $("#wallet_tbtc").show()
     }
+    require("./tab_wallets").ShowBalances(true)
 }

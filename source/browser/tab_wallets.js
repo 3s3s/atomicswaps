@@ -455,35 +455,35 @@ exports.ShowBalances = async function(force = true)
 
     const mnemonic = utils.getMnemonic();
 
-    $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
-    $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
-    $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
-
     if (main.BLOCKCHAIN == "testnet")
     {
+        $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
         tbtc.GetBalance(mnemonic, balance => {
-            $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
+            $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
+        $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
         const addressTXMR = await txmr.GetAddress(mnemonic)
         txmr.GetBalance(addressTXMR, balance => {
-            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0);
+            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })
     }
     else
     {
+        $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
         tbtc.GetBalance(mnemonic, balance => {
-            $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0 || 0);
+            $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
         /*const addressTXMR = await txmr.GetAddress(mnemonic)
         txmr.GetBalance(addressTXMR, balance => {
-            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0);
+            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })*/
 
+        $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
         const addressUSDX = await usdx.GetAddress(mnemonic)
         usdx.GetBalance(addressUSDX, balance => {
-            $("#txt_balance_usdx").empty().text((balance.confirmed / 100).toFixed(2)*1.0 || 0);
+            $("#txt_balance_usdx").empty().text((balance.confirmed / 100).toFixed(2)*1.0);
         })
 
     }
