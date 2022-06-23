@@ -2,6 +2,7 @@
 'use strict';
 const BN = require('bn.js');
 const tbtc_utils = require("../../wallets/bitcoin_test/utils")
+const btc_utils = require("../../wallets/bitcoin_main/utils")
 const txmr_utils = require("../../wallets/monero_test/utils")
 const usdx_utils = require("../../wallets/usdx/utils")
 const monero = require("../../wallets/monero")
@@ -22,8 +23,14 @@ exports.getMyOrder = function(uid)
 
 exports.CreateOrder = async function(mnemonic, sell_amount, buy_amount, sell_coin = "tbtc", buy_coin = "txmr")
 {    
-    const addressBTC = tbtc_utils.GetAddress(mnemonic);
-    const addressMonero = await txmr_utils.GetAddress(mnemonic)
+    const addressBTC = sell_coin == "tbtc" ?
+        tbtc_utils.GetAddress(mnemonic) :
+        btc_utils.GetAddress(mnemonic);
+    
+    const addressMonero = buy_coin == "txmr" ? 
+        await txmr_utils.GetAddress(mnemonic) :
+        await usdx_utils.GetAddress(mnemonic);
+    
     const orderMnemonic = utils.Hash160(mnemonic+Math.random());
 
     const swapContext = swap.InitContext(buy_coin, orderMnemonic);

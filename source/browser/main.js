@@ -37,6 +37,8 @@ function OnNetworkChange()
         
         $("#wallet_txmr").show()
         $("#wallet_tbtc").show()
+
+        $("#coin_to_buy").text("txmr")
     }
     else
     {
@@ -46,6 +48,8 @@ function OnNetworkChange()
         $("#wallet_usdx").show()
         $("#wallet_xmr").show()
         $("#wallet_tbtc").show()
+        
+        $("#coin_to_buy").text("usdx")
     }
     require("./tab_wallets").ShowBalances(true)
 }

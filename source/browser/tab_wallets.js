@@ -109,20 +109,8 @@ $("#btn_bitcointest_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-
-    if (main.BLOCKCHAIN == "testnet")
-    {
-        $("#id_buy_coin").empty().text("txmr")
-
-        $("#id_sell_coin").empty().text("tbtc")
-    }
-    else
-    {
-        $("#id_buy_coin").empty().text("xmr")
-        $("#id_buy_coin").empty().text("usdx")
-
-        $("#id_sell_coin").empty().text("btc")
-    }
+    $("#coin_to_buy").text(main.BLOCKCHAIN == "testnet" ? "txmr" : "usdx")
+    $("#coin_to_sell").text("tbtc")
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
     g_modal.show();  
@@ -134,8 +122,8 @@ $("#createorder_sell_ok").on("click", async e => {
 
     const sell_amount = $("#sell_amount").val();
     const buy_amount = $("#buy_amount").val();
-    const sell_coin = $("#id_sell_coin").text();
-    const buy_coin = $("#id_buy_coin").text();
+    const sell_coin = $("#coin_to_sell").text();
+    const buy_coin = $("#coin_to_buy").text();
 
     let result = {status: false};
     
@@ -147,6 +135,7 @@ $("#createorder_sell_ok").on("click", async e => {
     common.ShowProgressDialog(() => {
         common.AlertFail("Something wrong: timeout");
     });
+
     result = await p2p_orders.CreateOrder(mnemonic, (sell_amount*100000000).toFixed(0)*1, (buy_amount*100000000).toFixed(0)*1, sell_coin, buy_coin);
 
     common.HideProgressDialog();
@@ -174,19 +163,8 @@ $("#btn_monerotest_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-    if (main.BLOCKCHAIN == "testnet")
-    {
-        $("#id_buy_coin").empty().text("tbtc")
-
-        $("#id_sell_coin").empty().text("txmr")
-    }
-    else
-    {
-        $("#id_buy_coin").empty().text("btc")
-
-        $("#id_sell_coin").empty().text("xmr")
-        $("#id_sell_coin").empty().text("usdx")
-    }
+    $("#coin_to_buy").text("tbtc")
+    $("#coin_to_sell").text("txmr")
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
     g_modal.show();  
@@ -224,6 +202,21 @@ $("#btn_monerotest_withdraw").on("click", async e => {
 
 })
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+$("#btn_usdx_sell").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    $("#coin_to_buy").text("tbtc")
+    $("#coin_to_sell").text("usdx")
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
+
 $("#btn_usdx_deposit").on("click", async e => {
     $("#alert_container").empty();
 

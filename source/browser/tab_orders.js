@@ -63,9 +63,11 @@ async function UpdateTable(currentSavedOrders)
 
         const seller_pubkey = currentSavedOrders[key].seller_pubkey;
 
+        const c_buy_fixed = buy_coin == "txmr" ? 8 : 2;
+
         const td1 = $(`<td>${seller_pubkey}</td>`)
         const td2 = $(`<td>${(sell_amount / 100000000).toFixed(8)} ${sell_coin}</td>`)
-        const td3 = $(`<td>${(buy_amount / sell_amount).toFixed(8)} ${buy_coin}</td>`)
+        const td3 = $(`<td>${(buy_amount / sell_amount).toFixed(c_buy_fixed)} ${buy_coin}</td>`)
         
         const buttonBuy = $(`<button type="button" class="btn btn-primary btn-sm">Buy</button>`).on("click", async e => {
             common.ShowProgressDialog(() => {
@@ -75,10 +77,10 @@ async function UpdateTable(currentSavedOrders)
             if (! await HaveBalance(mnemonic, buy_coin, buy_amount)) 
             {
                 common.HideProgressDialog();
-                return common.AlertFail("Insufficient funds. Required: " + (buy_amount / 100000000).toFixed(8) + " " + buy_coin)
+                return common.AlertFail("Insufficient funds. Required: " + (buy_amount / 100000000).toFixed(c_buy_fixed) + " " + buy_coin)
             }
 
-            if (sell_coin == "txmr")
+            if (sell_coin == "txmr" || sell_coin == "usdx")
             {
                 const ret = await CreateSellOrder(mnemonic, buy_amount, sell_amount, buy_coin, sell_coin);
 
@@ -259,11 +261,6 @@ async function RefreshMyOrders()
 {
     if ($("#id_sell_coin").text() == "")
         $("#id_sell_coin").text("tbtc")
-    //if ($("#id_buy_coin").text() == "")
-    //    $("#id_sell_coin").text("txmr")
-
-    //const sell_coin = $("#id_sell_coin").text();
-    //const buy_coin = $("#id_buy_coin").text();
 
     const savedOrders = await utils.GetOrdersFromDB();
 

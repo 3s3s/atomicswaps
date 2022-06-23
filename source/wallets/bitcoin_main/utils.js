@@ -10,29 +10,19 @@ const utils = require("../../utils")
 const g_constants = require("../../constants")
 const common = require("../common")
 
-let singletonElectrum = false
-exports.Electrum = function(params, count = 0)
+exports.Electrum = function(params)
 {
     const reqObject = common.parseParams(params);
 
-    if (!reqObject || count > 10) return null;
-
-    if (singletonElectrum)
-    {
-        console.log("Wait old Electrum command")
-        return setTimeout(exports.Electrum, 1000, params, ++count)
-    }
-    singletonElectrum = true;
+    if (!reqObject) return null;
  
     const ElectrumCli = require('electrum-client')
 
     return new Promise(async ok => {
-        let ecl = null;
-        try{
-            console.log("start Electrum command")
-            ecl = new ElectrumCli(60002, 'electrum.blockstream.info', 'tls') // tcp or tls
+        const ecl = new ElectrumCli(60002, 'electrum.blockstream.info', 'tls') // tcp or tls
 
-            await ecl.connect()
+        await ecl.connect()
+        try{
             const ret = await ecl.request(reqObject.request, reqObject.params);
 
             if (params.publicKey && params.serverKey)
@@ -43,9 +33,8 @@ exports.Electrum = function(params, count = 0)
             console.error(e)
             ok({result: false, message: e.message})
         }
-        singletonElectrum = false;
-        if (ecl) await ecl.close() // disconnect(promise)*/
-     })
+        await ecl.close() // disconnect(promise)*/
+    })
 }
 
 exports.GetBalance = async function(mnemonic, callback = null)
@@ -62,7 +51,7 @@ exports.GetBalance = async function(mnemonic, callback = null)
                                     publicKey: g_constants.clientDHkeys.pub,
                                     serverKey: g_constants.clientDHkeys.server_pub, 
                                     request: request,
-                                    coin: "tbtc"}, balance => 
+                                    coin: "btc"}, balance => 
         {
             try {
                 const ret = JSON.parse(balance)
@@ -80,9 +69,9 @@ exports.GetBalance = async function(mnemonic, callback = null)
 exports.GetAddress = function(mnemonic)
 {
     const seed = mn.mnemonicToSeedSync(mnemonic, { prefix: mn.PREFIXES.standard });
-    const root = bip32.fromSeed(seed, bitcoin.networks.testnet);
+    const root = bip32.fromSeed(seed, bitcoin.networks.bitcoin);
 
-    let p2pkh = bitcoin.payments.p2pkh({ pubkey: root.derivePath("m/0/0").publicKey, network: bitcoin.networks.testnet });
+    let p2pkh = bitcoin.payments.p2pkh({ pubkey: root.derivePath("m/0/0").publicKey, network: bitcoin.networks.bitcoin });
     
     return {p2pkh: p2pkh, privateKey: root.derivePath("m/0/0").privateKey, publicKey: root.derivePath("m/0/0").publicKey.toString("hex")};    
 }
@@ -100,7 +89,7 @@ exports.listunspent = function(address)
             publicKey: g_constants.clientDHkeys.pub,
             serverKey: g_constants.clientDHkeys.server_pub,
             request: request,
-            coin: "tbtc"}, listStr => {
+            coin: "btc"}, listStr => {
                 try {
                     ok( JSON.parse(listStr) );
                 }
@@ -115,7 +104,7 @@ exports.withdraw = function(mnemonic, address_to, amount)
     
     return new Promise(async ok => {
         const address = exports.GetAddress(mnemonic);        
-        const ecPair = multicoin.ECPair.fromPrivateKey(address.privateKey, { network: bitcoin.networks.testnet })
+        const ecPair = multicoin.ECPair.fromPrivateKey(address.privateKey, { network: bitcoin.networks.bitcoin })
 
         if (!ecPair)
             return ok(-3);
@@ -125,7 +114,7 @@ exports.withdraw = function(mnemonic, address_to, amount)
         if (!list) return ok(-1);
 
         try {
-            const txb = new multicoin.TransactionBuilder(bitcoin.networks.testnet) 
+            const txb = new multicoin.TransactionBuilder(bitcoin.networks.bitcoin) 
             txb.setVersion(2)
             
             let sum = 0;
@@ -178,7 +167,7 @@ exports.broadcast = function(rawTX)
             customP2P.SendMessage({
                 command: "electrum", 
                 request: request,
-                coin: "tbtc"}, ret => 
+                coin: "btc"}, ret => 
         {  
             return ok(ret);
         })

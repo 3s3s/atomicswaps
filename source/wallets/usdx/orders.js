@@ -20,10 +20,10 @@ exports.HandleCreateOrder = async function(params)
 
         const order = _order;
 
-        if (order.sell_amount*1 <= 100)
+        if (order.sell_amount/100000000 <= 0.01)
             return {
                 result: false, 
-                message: "Too small sell amount: "+(order.sell_amount/100000000).toFixed(8)*1
+                message: "Too small sell amount: "+(order.sell_amount/100000000).toFixed(2)*1
             };
 
         if (order.buy_amount*1 <= 100)
@@ -34,18 +34,18 @@ exports.HandleCreateOrder = async function(params)
 
         const balance = await usdx.GetBalance(order.addressMonero);
 
-        if (balance.confirmed/100 < order.sell_amount/100000000) 
+        if (balance.confirmed < order.sell_amount/1000000) 
             return {
                 result: false, 
-                message: `Not enough funds (${balance.confirmed/100} < ${order.sell_amount/100000000})`}
+                message: `Not enough funds (${balance.confirmed/100} < ${order.sell_amount/1000000})`}
 
 
         const balanceInOrders = await GetBalanceInOrders(order.seller_pubkey);
 
-        if (order.sell_amount + balanceInOrders > balance.confirmed)
+        if (order.sell_amount/1000000 + balanceInOrders > balance.confirmed)
             return {
                 result: false, 
-                message: "All orders ("+((order.sell_amount + balanceInOrders)/100).toFixed(2)*1+") > Balance ("+(balance.confirmed/100).toFixed(2)*1+")"
+                message: "All orders ("+((order.sell_amount/100000000 + balanceInOrders)/100).toFixed(2)*1+") > Balance ("+(balance.confirmed/100).toFixed(2)*1+")"
             };
 
         return await utils.SaveOrderToDB(order, params["uid"]);
@@ -58,7 +58,7 @@ exports.HandleCreateOrder = async function(params)
 
 async function GetBalanceInOrders(pubkey)
 {
-    const rows = await g_constants.dbTables["orders"].Select("SUM(sell_amount) AS balanceInOrders", "seller_pubkey='"+escape(pubkey)+"' AND sell_coin='USDX'")
+    const rows = await g_constants.dbTables["orders"].Select("SUM(sell_amount) AS balanceInOrders", "seller_pubkey='"+escape(pubkey)+"' AND sell_coin='usdx'")
 
     if (rows && rows.length)    
         return rows[0].balanceInOrders*1;

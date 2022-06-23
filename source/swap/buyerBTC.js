@@ -7,6 +7,7 @@ const common = require("./common")
 const multicoin = require("multicoinjs-lib");
 const monero = require("../wallets/monero")
 const txmr = require("../wallets/monero_test/utils")
+const usdx = require("../wallets/usdx/utils")
 const BN = require('bn.js');
 //const { DEFAULT_CHECK_CONNECTION_PERIOD } = require("monero-javascript/src/main/js/common/MoneroConnectionManager");
 const EC = require('elliptic').ec
@@ -457,7 +458,7 @@ exports.WaitConfirmation = async function (swapID)
         {
             //g_Transactions[swapID]["status"] = 80
             UpdateSwap(swapID, "status", 80)
-            utils.SwapLog(`Try to send ${buy_amount/100000000} txmr to address ${ctx.sharedMoneroAddress}`, "b", swapID)
+            utils.SwapLog(`Try to send ${buy_amount/100000000} ${buy_coin} to address ${ctx.sharedMoneroAddress}`, "b", swapID)
 
             const balance = await txmr.GetBalance({address: ctx.sharedMoneroAddress, privViewKey: ctx.sharedMoneroViewKey});
 
@@ -475,7 +476,32 @@ exports.WaitConfirmation = async function (swapID)
             {
                 //g_Transactions[swapID]["status"] = 90
                 UpdateSwap(swapID, "status", 90)
-                utils.SwapLog(`SendMoney (txmr) returned without errors! txid=${ret.txid}`, "b", swapID)
+                utils.SwapLog(`SendMoney (${buy_coin}) returned without errors! txid=${ret.txid}`, "b", swapID)
+            }            
+        }
+        if (buy_coin == "usdx")
+        {
+            //g_Transactions[swapID]["status"] = 80
+            UpdateSwap(swapID, "status", 80)
+            utils.SwapLog(`Try to send ${buy_amount/100000000} ${buy_coin} to address ${ctx.sharedMoneroAddress}`, "b", swapID)
+
+            const balance = await usdx.GetBalance({address: ctx.sharedMoneroAddress, privViewKey: ctx.sharedMoneroViewKey});
+
+            if (balance && balance.confirmed*1 != 0)
+            {
+                utils.SwapLog(`Returned without send because shared balane is not zero (${balance.confirmed}). Need to prevent a double spent)`, "b", swapID)
+                return; //to prevent double spent
+            }
+            
+            const ret = await usdx.SendMoney(refundXMR, ctx.sharedMoneroAddress, buy_amount/100000000);
+        
+            if (ret.result == false)
+                return EndSwap(swapID, ret.code ? `SendMoney returned error code ${ret.code}<br>***Swap canceled***` : "SendMoney returned error: " + ret.message + "<br>***Swap canceled***");
+            else
+            {
+                //g_Transactions[swapID]["status"] = 90
+                UpdateSwap(swapID, "status", 90)
+                utils.SwapLog(`SendMoney (${buy_coin}) returned without errors! txid=${ret.txid}`, "b", swapID)
             }            
         }
     })
@@ -514,6 +540,7 @@ async function WaitRefund(swapID)
         return;
 
     const context = g_Transactions[swapID];
+    const buy_coin = g_Transactions[swapID].buy_coin;
 
     const txFirst = bitcoin.Transaction.fromHex(context.txFirst);
     const refundXMR = context.refundXMR.address;
@@ -583,7 +610,7 @@ async function WaitRefund(swapID)
 
             //g_Transactions[swapID]["status"] = 99
             UpdateSwap(swapID, "status", 99)
-            utils.SwapLog(`Try refund ${(context.buy_amount/100000000)} txmr to address ${refundXMR}`, "b", swapID)
+            utils.SwapLog(`Try refund ${(context.buy_amount/100000000)} ${buy_coin} to address ${refundXMR}`, "b", swapID)
             
             const ret = await common.RefundMonero(checkAddress, refundXMR, context.buy_amount, context.buy_coin, swapID)
             
@@ -593,7 +620,7 @@ async function WaitRefund(swapID)
                 return setTimeout(WaitRefund, 1000*60*10, swapID)
             }
 
-            return EndSwap(swapID, `Refund success! ${context.buy_amount/100000000} txmr to address ${refundXMR}<br>***Swap complete***`);
+            return EndSwap(swapID, `Refund success! ${context.buy_amount/100000000} ${buy_coin} to address ${refundXMR}<br>***Swap complete***`);
         }
     }
     catch(e) {

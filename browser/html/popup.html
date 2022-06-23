@@ -366,16 +366,20 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div id="id_buy_coin" style="display:none;"></div>
-            <div id="id_sell_coin" style="display:none;"></div>
             <form>
-              <div class="mb-3">
+              <div class="input-group mb-3">
                 <label for="sell_amount" class="form-label">Amount to sell:</label>
                 <input id="sell_amount" type="text" class="form-control">
+                <select class="form-select" disabled>
+                  <option id="coin_to_sell" selected>tbtc</option>
+                </select>
               </div>
-              <div class="mb-3">
+              <div class="input-group mb-3">
                 <label for="buy_amount" class="form-label">Amount to buy:</label>
                 <input id="buy_amount" type="text" class="form-control">
+                <select class="form-select" disabled>
+                  <option id="coin_to_buy" selected></option>
+                </select>
               </div>
             </form>          
           </div>

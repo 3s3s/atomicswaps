@@ -40,6 +40,8 @@ p2p.on("new_order", async params =>
         answer = await require("../../wallets/bitcoin_test/orders").HandleCreateOrder(params)
     if (params["coin"] == "txmr")
         answer = await require("../../wallets/monero_test/orders").HandleCreateOrder(params)
+    if (params["coin"] == "usdx")
+        answer = await require("../../wallets/usdx/orders").HandleCreateOrder(params)
 
     return p2p.ProcessAnswer(params, answer)
 })

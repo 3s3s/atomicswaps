@@ -12,6 +12,7 @@ const BN = require('bn.js');
 const EC = require('elliptic').ec
 const EdDSA = require('elliptic').eddsa;
 const txmr = require("../wallets/monero_test/utils")
+const usdx = require("../wallets/usdx/utils")
 
 const ed25519 = new EdDSA('ed25519');
 const secp256k1 = new EC('secp256k1');
@@ -68,13 +69,21 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
     //const pubXMR_y = new BN(swapInfoBuyer.pubBuyerSpentKey, "hex", "le").toString("hex")
     utils.SwapLog(`Initiate sell ${swapInfoBuyer.sell_coin} transaction`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
 
-    const balanceCheck = await txmr.GetBalance(swapInfoBuyer.balanceCheck)
+    const balanceCheck = swapInfoBuyer.buy_coin == "txmr" ?
+        await txmr.GetBalance(swapInfoBuyer.balanceCheck):
+        await usdx.GetBalance(swapInfoBuyer.balanceCheck);
 
-    if (balanceCheck.confirmed/10000 < swapInfoBuyer.buy_amount)
+    if (swapInfoBuyer.buy_coin == "txmr" && balanceCheck.confirmed/10000 < swapInfoBuyer.buy_amount)
     {
         utils.SwapLog(`ERROR: Buyer has insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
         return {result: false, message: `insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`};
     }
+    if (swapInfoBuyer.buy_coin == "usdx" && balanceCheck.confirmed < swapInfoBuyer.buy_amount/1000000)
+    {
+        utils.SwapLog(`ERROR: Buyer has insufficient funds ${balanceCheck.confirmed/100} < ${swapInfoBuyer.buy_amount/100000000}`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
+        return {result: false, message: `insufficient funds ${balanceCheck.confirmed/100} < ${swapInfoBuyer.buy_amount/100000000}`};
+    }
+
 
     const keys = {
         pubKeyBTC: swapInfoBuyer.pubBuyerAdaptorKey.substring(2), pubKeyBTC_y: swapInfoBuyer.pubBuyerAdaptorKey_y, 
@@ -605,7 +614,22 @@ async function WaitSharedBalance(swapID)
         utils.SwapLog(`Got shared balance ${balance.confirmed/1000000000000} txmr. Send secret to buyer`, "s", swapID)
     }
     else
-        return utils.SwapLog(`Stop waiting because invalid buy coin ("${ctx.buy_coin}" instead of "txmr")`, "s", swapID)
+    {
+        if (ctx.buy_coin == "usdx")
+        {
+            const balance = await usdx.GetBalance(sharedMoneroAddress);    
+
+            if (!balance || !balance.confirmed || balance.confirmed/100 < ctx.buy_amount/100000000) 
+                return setTimeout(WaitSharedBalance, 1000*60, swapID)
+    
+            g_Transactions[swapID]["got_shared_balance"] = true;
+            UpdateSwap(swapID, "status", 75)
+            utils.SwapLog(`Got shared balance ${balance.confirmed/100} usdx. Send secret to buyer`, "s", swapID)
+    
+        }
+        else
+            return utils.SwapLog(`Stop waiting because invalid buy coin ("${ctx.buy_coin}" instead of "txmr or usdx")`, "s", swapID)
+    }
 
     const swapContext = {
         infoSecret: ctx.privateSecretForSell
@@ -720,6 +744,8 @@ async function WaitSellTransaction(swapID)
         let refundXMR = null;
         if (ctx.buy_coin == "txmr")
             refundXMR = txmr.getLastKnownAddress().address
+        if (ctx.buy_coin == "usdx")
+            refundXMR = usdx.getLastKnownAddress().address
 
         if (!refundXMR)
             return utils.SwapLog(`Invalid coin ${ctx.buy_coin}`, "s", swapID)
@@ -762,13 +788,17 @@ async function WaitSellTransaction(swapID)
             {                
                 utils.SwapLog(`Error${ret.message ? ": "+ret.message : ""} will wait 10 min<br>address: ${checkAddress.address}<br>private spend key: ${checkAddress.privSpentKey}<br>private view key: ${checkAddress.privViewKey}`, "s", swapID)
 
+                if (ret.code == 4) //too small amount - need stop waiting
+                {
+                    return EndSwap(swapID)
+                }
                 return setTimeout(WaitSellTransaction, 1000*60*10, swapID)
             }
 
             //utils.SwapLog(`Swap DONE! ${g_Transactions[swapID].buy_amount/100000000} txmr to address ${refundXMR}<br>***Swap complete***`, "s")
 
             //if (!!g_Transactions[swapID]) 
-            return EndSwap(swapID, `Swap DONE! ${ctx.buy_amount/100000000} txmr to address ${refundXMR}<br>***Swap complete***`)
+            return EndSwap(swapID, `Swap DONE! ${ctx.buy_amount/100000000} ${ctx.buy_coin} to address ${refundXMR}<br>***Swap complete***`)
             /*{
                 delete g_Transactions[swapID];
                 utils.DeleteObjectFromDB(`swap_sell_${swapID}`)

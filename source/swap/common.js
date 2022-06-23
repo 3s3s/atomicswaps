@@ -5,6 +5,7 @@ const g_constants = require("../constants")
 const customP2P = require("../server/p2p/custom")
 const tbtc_utils = require("../wallets/bitcoin_test/utils")
 const txmr_utils = require("../wallets/monero_test/utils")
+const usdx_utils = require("../wallets/usdx/utils")
 
 const bip68 = require('bip68');
 const bitcoin = require("bitcoinjs-lib")
@@ -401,6 +402,9 @@ exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
             const fee = 0.001*100000000;
             const refund_amount = amount - fee;
 
+            if (refund_amount <= 0)
+                return ok(ok({result: false, code: 4, message: `SendMoney error: too small amount ${(refund_amount/100000000).toFixed(8)} (${coin})`}));
+
             const ret = await txmr_utils.SendMoney(address, refundAddress, refund_amount/100000000);
             if (ret.result == false)
                 utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "e", swapID)
@@ -409,7 +413,23 @@ exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
 
             return ok(ret)
         }
-        return ok({result: false, code: 2, message: "RefundMonero error: Unsupported"})
+        if (coin == "usdx")
+        {
+            const fee = 0.01*100000000;
+            const refund_amount = amount - fee;
+
+            if (refund_amount <= 0)
+                return ok(ok({result: false, code: 4, message: `SendMoney error: too small amount ${(refund_amount/100000000).toFixed(2)} (${coin})`}));
+            
+            const ret = await usdx_utils.SendMoney(address, refundAddress, refund_amount/100000000);
+            if (ret.result == false)
+                utils.SwapLog(ret.code ? `SendMoney returned error code ${ret.code}` : ret.message || "SendMoney returned error", "e", swapID)
+            else
+                utils.SwapLog(`SendMoney (usdx) returned without errors! txid=${ret.txid}`, "i", swapID)
+
+            return ok(ret)
+        }
+        return ok({result: false, code: 2, message: `SendMoney error (${coin}): Unsupported`})
    })
 
 

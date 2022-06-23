@@ -289,11 +289,12 @@ exports.GetAddressFromPrivateKeysAB = function(privAliceView, privAliceSpent, pr
 exports.GetAddressFromString = function(str, network = null)
 { 
     if (network == null)  
-    {
         return null;
-    }
-    if (network == "stagenet")
+
+    if (network == "stagenet" || network == "txmr")
         exports.setNetwork(NETWORKS.stagenet)
+    if (network == "main" || network == "xmr")
+        exports.setNetwork(NETWORKS.main)
     if (network == "usdx")
         exports.setNetwork(NETWORKS.usdx)
         
