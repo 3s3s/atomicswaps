@@ -10,26 +10,28 @@ const utils = require("../../utils")
 const g_constants = require("../../constants")
 const common = require("../common")
 
-let singletonElectrum = false
+//let singletonElectrum = false
 exports.Electrum = function(params, count = 0)
 {
     const reqObject = common.parseParams(params);
 
     if (!reqObject || count > 10) return null;
 
-    if (singletonElectrum)
+    /*if (singletonElectrum)
     {
-        console.log("Wait old Electrum command")
-        return setTimeout(exports.Electrum, 1000, params, ++count)
+        return new Promise(ok => {
+            console.log("Wait old Electrum command")
+            setTimeout(exports.Electrum, 1000, params, ++count)
+        })
     }
-    singletonElectrum = true;
+    singletonElectrum = true;*/
  
     const ElectrumCli = require('electrum-client')
 
     return new Promise(async ok => {
         let ecl = null;
         try{
-            console.log("start Electrum command")
+            console.log(`start Electrum command: ${reqObject.request}`)
             ecl = new ElectrumCli(60002, 'electrum.blockstream.info', 'tls') // tcp or tls
 
             await ecl.connect()
@@ -43,7 +45,7 @@ exports.Electrum = function(params, count = 0)
             console.error(e)
             ok({result: false, message: e.message})
         }
-        singletonElectrum = false;
+        //singletonElectrum = false;
         if (ecl) await ecl.close() // disconnect(promise)*/
      })
 }

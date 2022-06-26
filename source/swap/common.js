@@ -328,6 +328,7 @@ exports.CheckSpent = function(scriptpubkey, txHash, coin)
         params: [scriptpubkey]}));
     
     return new Promise(ok => {
+        console.log("CheckSpent - SendMessage")
         customP2P.SendMessage({
             command: "electrum", 
             publicKey: g_constants.clientDHkeys.pub,
@@ -351,7 +352,10 @@ exports.CheckSpent = function(scriptpubkey, txHash, coin)
                 }
             }
         );    
-    }, reject => {reject ({result: false, message: "p2plib error"})})
+    }, reject => {
+        console.log("CheckSpent - reject"); 
+        reject ({result: false, message: "p2plib error"})
+    })
 }
 
 exports.GetSignatureFromTX = function(txHash, coin)
