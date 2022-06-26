@@ -463,6 +463,9 @@ exports.ShowBalances = async function(force = true)
 
     const mnemonic = utils.getMnemonic();
 
+    const addressTXMR = await txmr.GetAddress(mnemonic)
+    const addressUSDX = await usdx.GetAddress(mnemonic)
+
     if (main.BLOCKCHAIN == "testnet")
     {
         $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
@@ -471,7 +474,6 @@ exports.ShowBalances = async function(force = true)
         })
         
         $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
-        const addressTXMR = await txmr.GetAddress(mnemonic)
         txmr.GetBalance(addressTXMR, balance => {
             $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })
@@ -489,7 +491,6 @@ exports.ShowBalances = async function(force = true)
         })*/
 
         $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
-        const addressUSDX = await usdx.GetAddress(mnemonic)
         usdx.GetBalance(addressUSDX, balance => {
             $("#txt_balance_usdx").empty().text((balance.confirmed / 100).toFixed(2)*1.0);
         })
