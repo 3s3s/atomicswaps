@@ -19,7 +19,7 @@ exports.Electrum = function(params)
     const ElectrumCli = require('electrum-client')
 
     return new Promise(async ok => {
-        const ecl = new ElectrumCli(60002, 'electrum.blockstream.info', 'tls') // tcp or tls
+        const ecl = new ElectrumCli(50002, 'electrum.blockstream.info', 'tls') // tcp or tls
 
         await ecl.connect()
         try{

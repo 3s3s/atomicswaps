@@ -235,6 +235,16 @@
                             </div>                          
                           </td>
                         </tr>
+                        <!--<tr id="wallet_xmr" style="display:none;">
+                          <td>Monero (mainnet)</td><td id="txt_balance_usdx">0.000000</td>
+                          <td>
+                            <div class="gap-2 d-md-flex justify-content-md-end">
+                              <button id="btn_monero_sell" type="button" class="btn btn-info btn-sm">Sell</button>
+                              <button id="btn_monero_deposit" type="button" class="btn btn-info btn-sm">Deposit</button>
+                              <button id="btn_monero_withdraw" type="button" class="btn btn-info btn-sm">Withdraw</button>
+                            </div>                          
+                          </td>
+                        </tr>-->
                       </tbody>
                     </table>
                   </div>
@@ -377,8 +387,9 @@
               <div class="input-group mb-3">
                 <label for="buy_amount" class="form-label">Amount to buy:</label>
                 <input id="buy_amount" type="text" class="form-control">
-                <select class="form-select" disabled>
+                <select class="form-select">
                   <option id="coin_to_buy" selected></option>
+                  <option id="coin_to_buy2" style="display:none;"></option>
                 </select>
               </div>
             </form>          

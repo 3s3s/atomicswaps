@@ -443,6 +443,8 @@ exports.WaitConfirmation = async function (swapID)
         if (g_Transactions[swapID]["got_refund"])
             return EndSwap(swapID);
 
+        utils.SwapLog("Found the first transaction in blockchain. Try construct Refund and Cancel transactions", "b", swapID)
+
         setTimeout(WaitRefund, 1000, swapID)
 
         setTimeout(getCancel, 1000*60*10, swapID)

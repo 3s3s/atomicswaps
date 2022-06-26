@@ -109,8 +109,21 @@ $("#btn_bitcointest_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-    $("#coin_to_buy").text(main.BLOCKCHAIN == "testnet" ? "txmr" : "usdx")
-    $("#coin_to_sell").text("tbtc")
+    if (main.BLOCKCHAIN == "testnet")
+    {
+        $("#coin_to_sell").text("tbtc")
+
+        $("#coin_to_buy").text("txmr")
+        $("#coin_to_buy2").hide()
+    }
+    else
+    {
+        $("#coin_to_sell").text("tbtc")
+
+        $("#coin_to_buy").text("usdx")
+        //$("#coin_to_buy2").text("xmr")
+        $("#coin_to_buy2").hide();//.show()
+    }
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
     g_modal.show();  
@@ -164,6 +177,7 @@ $("#btn_monerotest_sell").on("click", e => {
     $("#buy_amount").empty();
 
     $("#coin_to_buy").text("tbtc")
+    $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("txmr")
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
@@ -210,6 +224,7 @@ $("#btn_usdx_sell").on("click", e => {
     $("#buy_amount").empty();
 
     $("#coin_to_buy").text("tbtc")
+    $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("usdx")
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
