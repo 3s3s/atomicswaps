@@ -120,7 +120,14 @@ exports.Wallet = async function(params)
                     return {result: false, message: `Network error. Try with another USDX address or try later (about 1 hour). Raw message: ${e.message}.`}
                 }
 
-                await viewOnlyWallet.importKeyImages(images);
+                try {
+                    await viewOnlyWallet.importKeyImages(images);
+                }
+                catch(e)
+                {
+                    console.log(e)
+                    return ok(null)
+                }
 
                 /*const outputsHex = await viewOnlyWallet.exportOutputs(true);
                 const balance = await viewOnlyWallet.getBalance();
