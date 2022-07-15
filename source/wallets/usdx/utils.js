@@ -50,6 +50,7 @@ exports.Wallet = async function(params)
 
     async function ProcessMessage(walletName, reqObject, ok, RPC)
     {
+        let viewOnlyWallet = null;
         try {
             if (g_openWallets[utils.Hash160(walletName)] == true)
             {
@@ -68,7 +69,7 @@ exports.Wallet = async function(params)
 
             const height = await daemon.getHeight();   
             
-            let viewOnlyWallet = monerojs.MoneroWalletFull.walletExists(walletName) ?
+            viewOnlyWallet = monerojs.MoneroWalletFull.walletExists(walletName) ?
                 await monerojs.openWalletFull({
                     path: walletName,
                     networkType: "mainnet",
@@ -117,34 +118,40 @@ exports.Wallet = async function(params)
                     images = monero.KeysFromJSON(reqObject.params[2]);
                 }
                 catch(e) {
+                    if (viewOnlyWallet)
+                        await viewOnlyWallet.close(true);
+
+                    g_openWallets[utils.Hash160(walletName)] = false;
+
                     return {result: false, message: `Network error. Try with another USDX address or try later (about 1 hour). Raw message: ${e.message}.`}
                 }
 
                 try {
                     await viewOnlyWallet.importKeyImages(images);
+
+                    // create unsigned tx using view-only wallet
+                    ret = await viewOnlyWallet.createTx({
+                        accountIndex: 0,
+                        address: reqObject.params[3],
+                        amount: reqObject.params[4]
+                    });
+                    const unsignedTxHex = ret.getTxSet().getUnsignedTxHex();
+                    
+                    ret = ret.toJson();
+
+                    ret["unsignedTxHex"] = unsignedTxHex;
                 }
                 catch(e)
                 {
+                    if (viewOnlyWallet)
+                        await viewOnlyWallet.close(true);
+
+                    g_openWallets[utils.Hash160(walletName)] = false;
+
                     console.log(e)
                     return ok(null)
                 }
 
-                /*const outputsHex = await viewOnlyWallet.exportOutputs(true);
-                const balance = await viewOnlyWallet.getBalance();
-                
-                ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex, address: reqObject.params[0]};*/
-
-                // create unsigned tx using view-only wallet
-                ret = await viewOnlyWallet.createTx({
-                    accountIndex: 0,
-                    address: reqObject.params[3],
-                    amount: reqObject.params[4]
-                });
-                const unsignedTxHex = ret.getTxSet().getUnsignedTxHex();
-                
-                ret = ret.toJson();
-
-                ret["unsignedTxHex"] = unsignedTxHex;
             }
 
             ret = JSON.stringify(ret);
@@ -152,13 +159,17 @@ exports.Wallet = async function(params)
             if (params.publicKey && params.serverKey)
                 ret = utils.ServerDH_Encrypt(ret);
 
-            await viewOnlyWallet.close(true);
+            if (viewOnlyWallet)
+                await viewOnlyWallet.close(true);
 
             g_openWallets[utils.Hash160(walletName)] = false;
 
             return ok( ret );
         }
         catch(e) {
+            if (viewOnlyWallet)
+                await viewOnlyWallet.close(true);
+
             g_openWallets[utils.Hash160(walletName)] = false;
             console.log(e);
 
