@@ -9,6 +9,7 @@ const monerojs = require("./usdx-javascript/index");
 const utils = require("../../utils")
 const customP2P = require("../../server/p2p/custom")
 const g_constants = require("../../constants");
+const fs = require('fs');
 
 const LOG = true;
 
@@ -144,8 +145,13 @@ exports.Wallet = async function(params)
                 catch(e)
                 {
                     if (viewOnlyWallet)
-                        await viewOnlyWallet.close(true);
+                        await viewOnlyWallet.close(false);
 
+                    const walletNamePath = walletName; 
+                    fs.unlinkSync(walletNamePath);
+                    fs.unlinkSync(walletNamePath+".address.txt");
+                    fs.unlinkSync(walletNamePath+".keys");
+                        
                     g_openWallets[utils.Hash160(walletName)] = false;
 
                     console.log(e)
