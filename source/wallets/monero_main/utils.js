@@ -61,7 +61,7 @@ exports.Wallet = async function(params)
             g_openWallets[utils.Hash160(walletName)] = true;
 
             const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
-            if (!daemon.isConnected) {
+            if (!daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = false;
                 log("Cancel Monero Wallet Message bacause daemon not connected...")
                 return ok(null);
@@ -176,7 +176,7 @@ exports.Wallet = async function(params)
             g_openWallets[utils.Hash160(walletName)] = false;
             console.log(e);
 
-            let ret = JSON.stringify({message: e.message});
+            let ret = JSON.stringify({result: false, message: e.message});
             
             if (params.publicKey && params.serverKey)
                 ret = utils.ServerDH_Encrypt(ret);
