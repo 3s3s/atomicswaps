@@ -293,7 +293,7 @@ exports.GetAddressFromString = function(str, network = null)
 
     if (network == "stagenet" || network == "txmr")
         exports.setNetwork(NETWORKS.stagenet)
-    if (network == "main" || network == "xmr")
+    if (network == "main" || network == "xmr" || network == "mainnet")
         exports.setNetwork(NETWORKS.main)
     if (network == "usdx")
         exports.setNetwork(NETWORKS.usdx)

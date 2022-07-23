@@ -72,13 +72,13 @@ exports.Wallet = async function(params)
             viewOnlyWallet = monerojs.MoneroWalletFull.walletExists(walletName) ?
                 await monerojs.openWalletFull({
                     path: walletName,
-                    networkType: "main",
+                    networkType: "mainnet",
                     password: "supersecretpassword123",
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 }) :
                 await monerojs.createWalletFull({
                     path: walletName,
-                    networkType: "main",
+                    networkType: "mainnet",
                     password: "supersecretpassword123",
                     primaryAddress: reqObject.params[0],
                     privateViewKey: reqObject.params[1],
@@ -198,7 +198,7 @@ exports.GetAddress = async function(mnemonic)
 
     const privateData = root.derivePath("m/0/0").privateKey.toString("hex");
 
-    const address = monero.GetAddressFromString(privateData, "main");
+    const address = monero.GetAddressFromString(privateData, "xmr");
     g_LastAddress = address;
     
     mapMnemonicToAddtess[mnemonic] = address;
@@ -328,7 +328,7 @@ async function processWithdraw(address, balance, address_to, amount)
     try{
         // create offline wallet
         let offlineWallet = await monerojs.createWalletFull({
-            networkType: "main",
+            networkType: "mainnet",
             password: "supersecretpassword123",
             primaryAddress: address.address,
             privateViewKey: address.privViewKey,
