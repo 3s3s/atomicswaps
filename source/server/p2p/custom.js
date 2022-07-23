@@ -20,6 +20,8 @@ p2p.on("monerod", async params =>
     let answer = null;
     if (params["coin"] == "txmr")
         answer = await require("../../wallets/monero_test/utils").Wallet(params)
+    if (params["coin"] == "xmr")
+        answer = await require("../../wallets/monero_main/utils").Wallet(params)
 
     return p2p.ProcessAnswer(params, answer)
 })

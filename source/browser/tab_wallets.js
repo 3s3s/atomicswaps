@@ -488,7 +488,7 @@ $("#withdraw_confirm").on("click", async e => {
             common.AlertFail("Something wrong: timeout");
         });
 
-        const tx = await txmr.broadcast(mnemonic, rawTX);
+        const tx = await xmr.broadcast(mnemonic, rawTX);
 
         common.HideProgressDialog();
 
@@ -562,6 +562,7 @@ exports.ShowBalances = async function(force = true)
     const mnemonic = utils.getMnemonic();
 
     const addressTXMR = await txmr.GetAddress(mnemonic)
+    const addressXMR = await xmr.GetAddress(mnemonic)
     const addressUSDX = await usdx.GetAddress(mnemonic)
 
     if (main.BLOCKCHAIN == "testnet")
@@ -583,7 +584,7 @@ exports.ShowBalances = async function(force = true)
             $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
-        const addressXMR = await xmr.GetAddress(mnemonic)
+        $("#txt_balance_xmr").empty().append($("<span class='text-warning'>wait update...</span>"))
         xmr.GetBalance(addressXMR, balance => {
             $("#txt_balance_xmr").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })

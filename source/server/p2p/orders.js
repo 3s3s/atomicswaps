@@ -4,8 +4,8 @@ const BN = require('bn.js');
 const tbtc_utils = require("../../wallets/bitcoin_test/utils")
 const btc_utils = require("../../wallets/bitcoin_main/utils")
 const txmr_utils = require("../../wallets/monero_test/utils")
+const xmr_utils = require("../../wallets/monero_main/utils")
 const usdx_utils = require("../../wallets/usdx/utils")
-const monero = require("../../wallets/monero")
 const utils = require("../../utils")
 const customP2P = require("./custom")
 const swap = require("../../wallets/common")
@@ -28,7 +28,9 @@ exports.CreateOrder = async function(mnemonic, sell_amount, buy_amount, sell_coi
         btc_utils.GetAddress(mnemonic);
     
     const addressMonero = buy_coin == "txmr" ? 
-        await txmr_utils.GetAddress(mnemonic) :
+        await txmr_utils.GetAddress(mnemonic) : 
+        buy_coin == "xmr" ?
+        await xmr_utils.GetAddress(mnemonic) :
         await usdx_utils.GetAddress(mnemonic);
     
     const orderMnemonic = utils.Hash160(mnemonic+Math.random());

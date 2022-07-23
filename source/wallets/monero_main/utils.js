@@ -198,7 +198,7 @@ exports.GetAddress = async function(mnemonic)
 
     const privateData = root.derivePath("m/0/0").privateKey.toString("hex");
 
-    const address = monero.GetAddressFromString(privateData, "stagenet");
+    const address = monero.GetAddressFromString(privateData, "main");
     g_LastAddress = address;
     
     mapMnemonicToAddtess[mnemonic] = address;
@@ -328,7 +328,7 @@ async function processWithdraw(address, balance, address_to, amount)
     try{
         // create offline wallet
         let offlineWallet = await monerojs.createWalletFull({
-            networkType: "stagenet",
+            networkType: "main",
             password: "supersecretpassword123",
             primaryAddress: address.address,
             privateViewKey: address.privViewKey,
