@@ -122,7 +122,7 @@ exports.Wallet = async function(params)
                         await viewOnlyWallet.close(true);
 
                     g_openWallets[utils.Hash160(walletName)] = false;
-                    return {result: false, message: `Network error. Try with another txmr address or try later (about 1 hour). Raw message: ${e.message}.`}
+                    return {result: false, message: `Network error. Try with another xmr address or try later (about 1 hour). Raw message: ${e.message}.`}
                 }
 
                 try {
@@ -293,6 +293,9 @@ exports.SendMoney = async function(address, address_to, amount)
     }
     catch(e) {
         console.log(e)
+
+        if (e.message.indexOf("p2plib timeout") >= 0)
+            e.message = "p2plib timeout";
 
         utils.SwapLog(e.message, "e")
 

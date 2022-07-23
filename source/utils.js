@@ -308,10 +308,12 @@ exports.HandleInviteBuyer = async function(params)
     
     const myOrder = p2p_orders.getMyOrder(_order["orderUID_buyer"]);
 
-    if (myOrder == null) return null;
+    if (!myOrder || !myOrder.order || !myOrder.order.active) return null;
 
+    //seller invite me to process order
     const ret = await p2p_orders.InitBuyOrder(exports.getMnemonic(), _order.orderUID, _order.sell_coin, _order.seller_pubkey, _order.sell_amount, _order.buy_amount, _order.buy_coin) 
 
+    //delete my order
     await p2p_orders.DeleteOrder(_order["orderUID_buyer"], _order.buy_coin);
 
     return ret;
@@ -418,7 +420,7 @@ exports.InitBuyOrder = function(params)
 
     const myOrder = p2p_orders.getMyOrder(swapInfo.uid);
 
-    if (myOrder == null) return null;
+    if (!myOrder || !myOrder.order || !myOrder.order.active) return null;
 
     if (swapInfo.sell_coin == "tbtc")
       return sellerBTC.InitBuyOrder(myOrder, swapInfo);
@@ -478,13 +480,13 @@ exports.GetOrdersFromDB = async function()
             allOrders[k] = orders[k]
         }
     }  
+    if (!allOrders) return {};
 
     const orders = allOrders; //exports.storage.getItem("orders_"+sell_coin);
-    if (!orders) return ret;
 
     for (let key in orders)
     {
-      if (orders[key].time < Date.now() - 60*10*1000)
+      if (orders[key].time < Date.now() - 60*10*1000 || !orders[key].active)
         continue;
 
       ret[key] = orders[key];

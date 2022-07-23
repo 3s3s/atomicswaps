@@ -295,6 +295,9 @@ exports.SendMoney = async function(address, address_to, amount)
     catch(e) {
         console.log(e)
 
+        if (e.message.indexOf("p2plib timeout") >= 0)
+            e.message = "p2plib timeout";
+
         utils.SwapLog(e.message, "e")
 
         return {result: false, message: e.message, code: 2}    

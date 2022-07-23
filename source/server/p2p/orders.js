@@ -97,8 +97,11 @@ exports.DeleteOrder = function(uid, coin = "tbtc")
                 if (result.result == true)
                 {
                     utils.DeleteOrderFromDB({uid: uid, sell_coin: coin})
-                    if (!!g_myOrders[uid])
-                        delete g_myOrders[uid]
+                    if (!!g_myOrders[uid] && !!g_myOrders[uid].order)
+                    {
+                        //delete g_myOrders[uid]
+                        g_myOrders[uid].order.active = 0;
+                    }
                 }
                 return ok( result )
             }
@@ -111,7 +114,7 @@ exports.DeleteOrder = function(uid, coin = "tbtc")
 exports.RefreshOrder = function(uid)
 {
     const myOrder = exports.getMyOrder(uid);
-    if (!myOrder)   
+    if (!myOrder || !myOrder.order || !myOrder.order.active)   
         return;
 
     //const address = myOrder.address;
@@ -154,7 +157,7 @@ exports.RefreshOrder = function(uid)
 exports.InviteBuyer = function(orderUID, orderUID_buyer)
 {
     const myOrder = exports.getMyOrder(orderUID);
-    if (!myOrder)   
+    if (!myOrder || !myOrder.order || !myOrder.order.active)   
         return {result: false, message: "Error: invalid orderUID"};
 
     let _order = myOrder.order;

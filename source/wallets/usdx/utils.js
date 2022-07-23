@@ -296,6 +296,9 @@ exports.SendMoney = async function(address, address_to, amount)
     }
     catch(e) {
         console.log(e)
+//__result__: false, __message__: "p2plib timeout"
+        if (e.message.indexOf("p2plib timeout") >= 0)
+            e.message = "p2plib timeout";
 
         utils.SwapLog(e.message, "e")
 
@@ -338,7 +341,7 @@ async function processWithdraw(address, balance, address_to, amount)
         // import outputs to offline wallet
         let numOutputsImported = await offlineWallet.importOutputs(balance.outputsHex);
 
-        if (!numOutputsImported) return {result: false, message: "Could not confirm balance from Monero blockchain"}
+        if (!numOutputsImported) return {result: false, message: "Could not confirm balance from USDX blockchain"}
 
         // export key images from offline wallet
         let keyImages = await offlineWallet.exportKeyImages(true);

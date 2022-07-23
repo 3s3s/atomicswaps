@@ -3,6 +3,7 @@
 
 const tbtc = require("../wallets/bitcoin_test/utils")
 const txmr = require("../wallets/monero_test/utils")
+const xmr = require("../wallets/monero_main/utils")
 const usdx = require("../wallets/usdx/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
@@ -54,6 +55,10 @@ async function UpdateTable(currentSavedOrders)
             continue;
 
         const orderUID = currentSavedOrders[key].uid;
+        
+        const myOrder = p2p_orders.getMyOrder(orderUID);
+        if (!!myOrder && !!myOrder.order && !myOrder.order.active)
+            continue;
 
         const sell_coin = currentSavedOrders[key].sell_coin;
         const buy_coin = currentSavedOrders[key].buy_coin;
@@ -63,7 +68,7 @@ async function UpdateTable(currentSavedOrders)
 
         const seller_pubkey = currentSavedOrders[key].seller_pubkey;
 
-        const c_buy_fixed = buy_coin == "txmr" ? 8 : 2;
+        const c_buy_fixed = (buy_coin == "txmr" || buy_coin == "xmr") ? 8 : 2;
 
         const td1 = $(`<td>${seller_pubkey}</td>`)
         const td2 = $(`<td>${(sell_amount / 100000000).toFixed(8)} ${sell_coin}</td>`)
@@ -80,7 +85,7 @@ async function UpdateTable(currentSavedOrders)
                 return common.AlertFail("Insufficient funds. Required: " + (buy_amount / 100000000).toFixed(c_buy_fixed) + " " + buy_coin)
             }
 
-            if (sell_coin == "txmr" || sell_coin == "usdx")
+            if (sell_coin == "txmr" || sell_coin == "xmr" || sell_coin == "usdx")
             {
                 const ret = await CreateSellOrder(mnemonic, buy_amount, sell_amount, buy_coin, sell_coin);
 
@@ -111,7 +116,7 @@ async function UpdateTable(currentSavedOrders)
         const td4 = $("<td></td>").append(buttonBuy)
 
         //if (tbtc_utils.IsMyPublicKey(mnemonic, seller_pubkey))
-        if (p2p_orders.getMyOrder(orderUID) != null)
+        if (!!myOrder && !!myOrder.order && !!myOrder.order.active)
             td4.append(buttonDelete)
 
         const row = $("<tr></tr>").append(td1).append(td2).append(td3).append(td4)
@@ -160,6 +165,15 @@ function HaveBalance(mnemonic, buy_coin, buy_amount)
         {
             const addressTXMR = await txmr.GetAddress(mnemonic)
             txmr.GetBalance(addressTXMR, balance => {
+                if (buy_amount / 100000000 >= (balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0) return ok(false)
+                return ok (true)
+            })
+            
+        }
+        if (buy_coin == "xmr")
+        {
+            const addressXMR = await xmr.GetAddress(mnemonic)
+            xmr.GetBalance(addressXMR, balance => {
                 if (buy_amount / 100000000 >= (balance.confirmed / 1000000000000).toFixed(8)*1.0 || 0) return ok(false)
                 return ok (true)
             })
@@ -214,6 +228,10 @@ exports.UpdateOrders = async function(orders, sell_coin, updatetable = false)
         if (!order["uid"] || !order["json"] || order["uid"] == "undefined")
             continue;
 
+        const myOrder = p2p_orders.getMyOrder(order.uid);
+        if (!!myOrder && !!myOrder.order && !myOrder.order.active)
+            continue;
+            
         if (savedOrders[order.uid])
         {
             if (savedOrders[order.uid].active == 1)

@@ -12,6 +12,7 @@ const BN = require('bn.js');
 const EC = require('elliptic').ec
 const EdDSA = require('elliptic').eddsa;
 const txmr = require("../wallets/monero_test/utils")
+const xmr = require("../wallets/monero_main/utils")
 const usdx = require("../wallets/usdx/utils")
 
 const ed25519 = new EdDSA('ed25519');
@@ -611,24 +612,39 @@ async function WaitSharedBalance(swapID)
 
         g_Transactions[swapID]["got_shared_balance"] = true;
         UpdateSwap(swapID, "status", 75)
-        utils.SwapLog(`Got shared balance ${balance.confirmed/1000000000000} txmr. Send secret to buyer`, "s", swapID)
+        utils.SwapLog(`Got shared balance ${balance.confirmed/1000000000000} ${ctx.buy_coin}. Send secret to buyer`, "s", swapID)
     }
     else
     {
-        if (ctx.buy_coin == "usdx")
+        if (ctx.buy_coin == "xmr")
         {
-            const balance = await usdx.GetBalance(sharedMoneroAddress);    
+            const balance = await xmr.GetBalance(sharedMoneroAddress);    
 
-            if (!balance || !balance.confirmed || balance.confirmed/100 < ctx.buy_amount/100000000) 
+            if (!balance || !balance.confirmed || balance.confirmed/10000 < ctx.buy_amount) 
                 return setTimeout(WaitSharedBalance, 1000*60, swapID)
     
             g_Transactions[swapID]["got_shared_balance"] = true;
             UpdateSwap(swapID, "status", 75)
-            utils.SwapLog(`Got shared balance ${balance.confirmed/100} usdx. Send secret to buyer`, "s", swapID)
-    
+            utils.SwapLog(`Got shared balance ${balance.confirmed/1000000000000} ${ctx.buy_coin}. Send secret to buyer`, "s", swapID)    
         }
         else
-            return utils.SwapLog(`Stop waiting because invalid buy coin ("${ctx.buy_coin}" instead of "txmr or usdx")`, "s", swapID)
+        {
+            if (ctx.buy_coin == "usdx")
+            {
+                const balance = await usdx.GetBalance(sharedMoneroAddress);    
+
+                if (!balance || !balance.confirmed || balance.confirmed/100 < ctx.buy_amount/100000000) 
+                    return setTimeout(WaitSharedBalance, 1000*60, swapID)
+        
+                g_Transactions[swapID]["got_shared_balance"] = true;
+                UpdateSwap(swapID, "status", 75)
+                utils.SwapLog(`Got shared balance ${balance.confirmed/100} ${ctx.buy_coin}. Send secret to buyer`, "s", swapID)
+        
+            }
+            else
+                return utils.SwapLog(`Stop waiting because invalid buy coin ("${ctx.buy_coin}" instead of "txmr or xmr or usdx")`, "s", swapID)
+
+        }
     }
 
     const swapContext = {
@@ -744,6 +760,8 @@ async function WaitSellTransaction(swapID)
         let refundXMR = null;
         if (ctx.buy_coin == "txmr")
             refundXMR = txmr.getLastKnownAddress().address
+        if (ctx.buy_coin == "xmr")
+            refundXMR = xmr.getLastKnownAddress().address
         if (ctx.buy_coin == "usdx")
             refundXMR = usdx.getLastKnownAddress().address
 

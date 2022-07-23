@@ -4,6 +4,7 @@
 const mn = require('electrum-mnemonic')
 //const p2p = require("p2plib");
 const txmr = require("../wallets/monero_test/utils")
+const xmr = require("../wallets/monero_main/utils")
 const usdx = require("../wallets/usdx/utils")
 const tbtc = require("../wallets/bitcoin_test/utils")
 const p2p_orders = require("../server/p2p/orders")
@@ -103,32 +104,6 @@ $("#old_password_button").on("click", e => {
     }
 })
 
-$("#btn_bitcointest_sell").on("click", e => {
-    $("#alert_container").empty();
-
-    $("#sell_amount").empty();
-    $("#buy_amount").empty();
-
-    if (main.BLOCKCHAIN == "testnet")
-    {
-        $("#coin_to_sell").text("tbtc")
-
-        $("#coin_to_buy").text("txmr")
-        $("#coin_to_buy2").hide()
-    }
-    else
-    {
-        $("#coin_to_sell").text("tbtc")
-
-        $("#coin_to_buy").text("usdx")
-        //$("#coin_to_buy2").text("xmr")
-        $("#coin_to_buy2").hide();//.show()
-    }
-
-    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
-    g_modal.show();  
-})
-
 $("#createorder_sell_ok").on("click", async e => {
     $("#alert_container").empty();
     g_modal.hide();
@@ -169,7 +144,10 @@ $("#createorder_sell_ok").on("click", async e => {
             return common.AlertFail("Orders NOT updated!");  
     }       
 })
-
+/////////////////////////////////////////////////////////////////////
+///                       TXMR                                     //
+/////////////////////////////////////////////////////////////////////
+//on click sell txmr
 $("#btn_monerotest_sell").on("click", e => {
     $("#alert_container").empty();
 
@@ -184,7 +162,7 @@ $("#btn_monerotest_sell").on("click", e => {
     g_modal.show();  
 })
 
-///////////////////////////////////////////////////////////////////////////////btn_monerotest_deposit
+//on click txmr deposit
 $("#btn_monerotest_deposit").on("click", async e => {
     $("#alert_container").empty();
 
@@ -204,6 +182,8 @@ $("#btn_monerotest_deposit").on("click", async e => {
     g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
     g_modal.show();  
 })
+
+//on click txmr withdraw
 $("#btn_monerotest_withdraw").on("click", async e => {
     $("#alert_container").empty();
 
@@ -215,8 +195,62 @@ $("#btn_monerotest_withdraw").on("click", async e => {
     g_modal.show();  
 
 })
-///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+///                       XMR                                     //
+/////////////////////////////////////////////////////////////////////
+//on click sell xmr
+$("#btn_monero_sell").on("click", e => {
+    $("#alert_container").empty();
 
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    $("#coin_to_buy").text("tbtc")
+    $("#coin_to_buy2").hide();
+    $("#coin_to_sell").text("xmr")
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
+//on click xmr deposit
+$("#btn_monero_deposit").on("click", async e => {
+    $("#alert_container").empty();
+
+    const mnemonic = utils.getMnemonic();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return common.AlertFail();
+
+    const moneroAddress = await xmr.GetAddress(mnemonic);
+
+    $("#deposit_address").empty().val(moneroAddress.address);
+    $("#priv_view_key").empty().val(moneroAddress.privViewKey);
+    $("#priv_spent_key").empty().val(moneroAddress.privSpentKey);
+
+    $("#accordionPrivKeys").show()
+
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
+    g_modal.show();  
+})
+
+//on click xmr withdraw
+$("#btn_monero_withdraw").on("click", async e => {
+    $("#alert_container").empty();
+
+    $("#withdraw_address").empty();
+    $("#withdraw_address_amount").empty();
+
+    $("#id_withdraw_coin").empty().text("xmr")
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
+    g_modal.show();  
+
+})
+/////////////////////////////////////////////////////////////////////
+///                       USDX                                     //
+/////////////////////////////////////////////////////////////////////
+
+//on click sell usdx
 $("#btn_usdx_sell").on("click", e => {
     $("#alert_container").empty();
 
@@ -231,7 +265,7 @@ $("#btn_usdx_sell").on("click", e => {
     g_modal.show();  
 })
 
-
+//on click usdx deposit
 $("#btn_usdx_deposit").on("click", async e => {
     $("#alert_container").empty();
 
@@ -251,6 +285,8 @@ $("#btn_usdx_deposit").on("click", async e => {
     g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
     g_modal.show();  
 })
+
+//on click usdx withdraw
 $("#btn_usdx_withdraw").on("click", async e => {
     $("#alert_container").empty();
 
@@ -263,9 +299,38 @@ $("#btn_usdx_withdraw").on("click", async e => {
 
 })
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+///                       TBTC                                     //
+/////////////////////////////////////////////////////////////////////
 
+//on click sell tbtc
+$("#btn_bitcointest_sell").on("click", e => {
+    $("#alert_container").empty();
 
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    if (main.BLOCKCHAIN == "testnet")
+    {
+        $("#coin_to_sell").text("tbtc")
+
+        $("#coin_to_buy").text("txmr")
+        $("#coin_to_buy2").hide()
+    }
+    else
+    {
+        $("#coin_to_sell").text("tbtc");
+
+        $("#coin_to_buy").text("usdx");
+        $("#coin_to_buy2").text("xmr");
+        $("#coin_to_buy2").show(); //.hide();//.show()
+    }
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
+//on click tbtc deposit
 $("#btn_bitcointest_deposit").on("click", e => {
     $("#alert_container").empty();
 
@@ -282,6 +347,8 @@ $("#btn_bitcointest_deposit").on("click", e => {
     g_modal.show();  
 
 })
+
+//on click tbtc withdraw
 $("#btn_bitcointest_withdraw").on("click", e => {
     $("#alert_container").empty();
 
@@ -330,6 +397,19 @@ $("#withdraw_ok").on("click", async e => {
         if (ret.message) return common.AlertFail(ret.message);
 
         ConfirmTransaction("txmr", ret.amount, ret.address_to, ret.raw, ret.fee);
+    }
+    if (coin == "xmr")
+    {
+        common.ShowProgressDialog(() => {
+            common.AlertFail("Something wrong: timeout");
+        });
+        const ret = await xmr.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
+
+        common.HideProgressDialog();
+
+        if (ret.message) return common.AlertFail(ret.message);
+
+        ConfirmTransaction("xmr", ret.amount, ret.address_to, ret.raw, ret.fee);
     }
 
     if (coin == "usdx")
@@ -402,6 +482,20 @@ $("#withdraw_confirm").on("click", async e => {
         
         return common.AlertSuccess("txid: "+tx.txid)
     }
+    if (coin == "xmr")
+    {
+        common.ShowProgressDialog(() => {
+            common.AlertFail("Something wrong: timeout");
+        });
+
+        const tx = await txmr.broadcast(mnemonic, rawTX);
+
+        common.HideProgressDialog();
+
+        if (!tx.result) return common.AlertFail(tx.message);
+        
+        return common.AlertSuccess("txid: "+tx.txid)
+    }
     if (coin == "usdx")
     {
         common.ShowProgressDialog(() => {
@@ -439,9 +533,13 @@ exports.ShowBalances = async function(force = true)
     if (!connected.length)
     {
         $("#txt_balance_bitcointest").empty().append($("<span class='text-danger'>Offline</span>"))
+        $("#txt_balance_btc").empty().append($("<span class='text-danger'>Offline</span>"))
+        
         $("#btn_bitcointest_withdraw").prop('disabled', true);
 
-        $("#txt_balance_monero").empty().append($("<span class='text-danger'>Offline</span>"))
+
+        $("#txt_balance_monerotest").empty().append($("<span class='text-danger'>Offline</span>"))
+        $("#txt_balance_xmr").empty().append($("<span class='text-danger'>Offline</span>"))
 
         $("#txt_balance_usdx").empty().append($("<span class='text-danger'>Offline</span>"))
 
@@ -473,9 +571,9 @@ exports.ShowBalances = async function(force = true)
             $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
-        $("#txt_balance_monero").empty().append($("<span class='text-warning'>wait update...</span>"))
+        $("#txt_balance_monerotest").empty().append($("<span class='text-warning'>wait update...</span>"))
         txmr.GetBalance(addressTXMR, balance => {
-            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
+            $("#txt_balance_monerotest").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })
     }
     else
@@ -485,10 +583,10 @@ exports.ShowBalances = async function(force = true)
             $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
-        /*const addressTXMR = await txmr.GetAddress(mnemonic)
-        txmr.GetBalance(addressTXMR, balance => {
-            $("#txt_balance_monero").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
-        })*/
+        const addressXMR = await xmr.GetAddress(mnemonic)
+        xmr.GetBalance(addressXMR, balance => {
+            $("#txt_balance_xmr").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
+        })
 
         $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
         usdx.GetBalance(addressUSDX, balance => {
