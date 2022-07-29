@@ -60,7 +60,7 @@ exports.Wallet = async function(params)
 
             g_openWallets[utils.Hash160(walletName)] = true;
 
-            const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
+            const daemon = await monerojs.connectToDaemonRpc(RPC.host);
             if (!await daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = false;
                 log("Cancel Monero Wallet Message bacause daemon not connected...")
@@ -82,7 +82,7 @@ exports.Wallet = async function(params)
                     password: "supersecretpassword123",
                     primaryAddress: reqObject.params[0],
                     privateViewKey: reqObject.params[1],
-                    restoreHeight: height - 1000,
+                    restoreHeight: height - 10000,
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 });
 
@@ -90,7 +90,7 @@ exports.Wallet = async function(params)
 
             if (! await viewOnlyWallet.isSynced())
             {
-                log("Start sync Monero wallet")
+                log("Start sync Monero wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
                 await viewOnlyWallet.sync(); 
                 log("End sync Monero wallet")
             }
@@ -104,6 +104,7 @@ exports.Wallet = async function(params)
                 const balance = await viewOnlyWallet.getBalance();
                 
                 ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex, address: reqObject.params[0]};
+                log("Monero: getBalance return: "+ret.confirmed)
             }
 
             if (reqObject.request == "broadcast")

@@ -387,15 +387,15 @@
           </div>
           <div class="modal-body">
             <form>
-              <div class="input-group mb-3">
-                <label for="sell_amount" class="form-label">Amount to sell:</label>
+              <div class="input-group input-group-sm mb-3">
+                <label for="sell_amount" class="form-label">Amount to sell:&nbsp;</label>
                 <input id="sell_amount" type="text" class="form-control">
                 <select class="form-select" disabled>
                   <option id="coin_to_sell" selected>tbtc</option>
                 </select>
               </div>
-              <div class="input-group mb-3">
-                <label for="buy_amount" class="form-label">Amount to buy:</label>
+              <div class="input-group input-group-sm mb-3">
+                <label for="buy_amount" class="form-label">Amount to buy:&nbsp;</label>
                 <input id="buy_amount" type="text" class="form-control">
                 <select class="form-select">
                   <option id="coin_to_buy" selected></option>
@@ -488,5 +488,65 @@
     <script src="../js/bootstrap.bundle.min.js"></script>
     <script src="../js/workers.js"></script>
     <script src="../js/main.js"></script>
+    <script>
+      $('#sell_amount').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#createorder_sell_ok').trigger('click');
+            e.preventDefault();
+          }
+      });      
+      $('#buy_amount').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#createorder_sell_ok').trigger('click');
+            e.preventDefault();
+          }
+      });      
+
+      $('#withdraw_address').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#withdraw_ok').trigger('click');
+            e.preventDefault();
+          }
+      });      
+      $('#withdraw_address_amount').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#withdraw_ok').trigger('click');
+            e.preventDefault();
+          }
+      });      
+
+
+      $('#withdraw_address_c').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#withdraw_confirm').trigger('click');
+            e.preventDefault();
+          }
+      });      
+      $('#withdraw_address_amount_c').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#withdraw_confirm').trigger('click');
+            e.preventDefault();
+          }
+      });      
+
+      $('#set_password').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#new_password').trigger('click');
+            e.preventDefault();
+          }
+      });      
+      $('#set_password_confirm').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#new_password').trigger('click');
+            e.preventDefault();
+          }
+      });      
+      $('#old_password').on('keypress', e => {
+          if (e.keyCode === 13) {
+            $('#old_password_button').trigger('click');
+            e.preventDefault();
+          }
+      });      
+    </script>
   </body>
 </html>
