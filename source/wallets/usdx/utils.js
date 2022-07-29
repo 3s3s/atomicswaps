@@ -105,6 +105,7 @@ exports.Wallet = async function(params)
                 const balance = await viewOnlyWallet.getBalance();
                 
                 ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex, address: reqObject.params[0]};
+                log("USDX: getBalance return: "+ret.confirmed)
             }
 
             if (reqObject.request == "broadcast")
@@ -147,10 +148,13 @@ exports.Wallet = async function(params)
                     if (viewOnlyWallet)
                         await viewOnlyWallet.close(false);
 
-                    const walletNamePath = walletName; 
-                    fs.unlinkSync(walletNamePath);
-                    fs.unlinkSync(walletNamePath+".address.txt");
-                    fs.unlinkSync(walletNamePath+".keys");
+                    if (e.message.indexOf("step1;") == -1)
+                    {
+                        const walletNamePath = walletName; 
+                        fs.unlinkSync(walletNamePath);
+                        fs.unlinkSync(walletNamePath+".address.txt");
+                        fs.unlinkSync(walletNamePath+".keys");
+                    }
                         
                     g_openWallets[utils.Hash160(walletName)] = false;
 
@@ -218,7 +222,7 @@ exports.GetBalance = function(address, callback = null)
     try{
         if (!address.address) throw new Error(`Error: GetBalance called with bad argument: ${JSON.stringify(address)}`)
 
-        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
+        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data && g_LastUpdated[address.address].data.confirmed)
         {
             if (callback) return callback(g_LastUpdated[address.address].data)
             return g_LastUpdated[address.address].data;

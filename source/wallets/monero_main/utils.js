@@ -82,7 +82,7 @@ exports.Wallet = async function(params)
                     password: "supersecretpassword123",
                     primaryAddress: reqObject.params[0],
                     privateViewKey: reqObject.params[1],
-                    restoreHeight: height - 10000,
+                    restoreHeight: height - 1000,
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 });
 
@@ -146,11 +146,11 @@ exports.Wallet = async function(params)
                     if (viewOnlyWallet)
                         await viewOnlyWallet.close(false);
 
-                    const walletNamePath = walletName; 
+                    /*const walletNamePath = walletName; 
                     fs.unlinkSync(walletNamePath);
                     fs.unlinkSync(walletNamePath+".address.txt");
                     fs.unlinkSync(walletNamePath+".keys");
-                    g_openWallets[utils.Hash160(walletName)] = false;
+                    g_openWallets[utils.Hash160(walletName)] = false;*/
 
                     console.log(e)
                     return ok(null)
@@ -216,7 +216,7 @@ exports.GetBalance = function(address, callback = null)
     try{
         if (!address.address) throw new Error(`Error: GetBalance called with bad argument: ${JSON.stringify(address)}`)
 
-        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
+        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data && g_LastUpdated[address.address].data.confirmed)
         {
             if (callback) return callback(g_LastUpdated[address.address].data)
             return g_LastUpdated[address.address].data;
@@ -331,7 +331,7 @@ async function processWithdraw(address, balance, address_to, amount)
         let offlineWallet = await monerojs.createWalletFull({
             networkType: "mainnet",
             password: "supersecretpassword123",
-            primaryAddress: address.address,
+            primaryAddress: "535xp3D6VXzNS7dzoVeoyPhTJX17TTwtNJ3SLsyBa1B8Xqmo8z6RcULYQ6KVtLq3TJ4szc1AEZi98H8fLXDekkn7KDJKnHs", //address.address,
             privateViewKey: address.privViewKey,
             privateSpendKey: address.privSpentKey
         });
@@ -434,17 +434,13 @@ exports.broadcast = async function(mnemonic, signedTxHex, addrObject = null)
 
 }
 
-if (monerojs.GenUtils.isBrowser())
+/*if (monerojs.GenUtils.isBrowser())
 {
     monerojs.LibraryUtils.getWorker = async function() {
         
         // one time initialization
         if (!monerojs.LibraryUtils.WORKER) {
-            /*const text = unescape(require('../monero_common/monero_web_worker_2.js').STR); 
-            const blob = new Blob([text], {type: 'application/javascript'});
-            //const url = new URL('../monero_web_worker.js');
-            monerojs.LibraryUtils.WORKER = new Worker(URL.createObjectURL(blob)); //(monerojs.LibraryUtils.WORKER_DIST_PATH);*/
-            const monero_worker = new AtomicSwapWebWorker("monero");
+            const monero_worker = new AtomicSwapWebWorker("monero_main");
 
             monerojs.LibraryUtils.WORKER = monero_worker.worker;
 
@@ -477,4 +473,4 @@ if (monerojs.GenUtils.isBrowser())
         }
         return monerojs.LibraryUtils.WORKER;
     }
-}
+}*/

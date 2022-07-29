@@ -145,10 +145,10 @@ exports.Wallet = async function(params)
                     if (viewOnlyWallet)
                         await viewOnlyWallet.close(false);
 
-                    const walletNamePath = walletName; 
+                    /*const walletNamePath = walletName; 
                     fs.unlinkSync(walletNamePath);
                     fs.unlinkSync(walletNamePath+".address.txt");
-                    fs.unlinkSync(walletNamePath+".keys");
+                    fs.unlinkSync(walletNamePath+".keys");*/
                     
                     g_openWallets[utils.Hash160(walletName)] = false;
 
@@ -216,7 +216,7 @@ exports.GetBalance = function(address, callback = null)
     try{
         if (!address.address) throw new Error(`Error: GetBalance called with bad argument: ${JSON.stringify(address)}`)
 
-        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data)
+        if (!!g_LastUpdated[address.address] && Date.now() - g_LastUpdated[address.address].time*1 < 3*60*1000 && !!g_LastUpdated[address.address].data && g_LastUpdated[address.address].data.confirmed)
         {
             if (callback) return callback(g_LastUpdated[address.address].data)
             return g_LastUpdated[address.address].data;
@@ -440,10 +440,6 @@ if (monerojs.GenUtils.isBrowser())
         
         // one time initialization
         if (!monerojs.LibraryUtils.WORKER) {
-            /*const text = unescape(require('../monero_common/monero_web_worker_2.js').STR); 
-            const blob = new Blob([text], {type: 'application/javascript'});
-            //const url = new URL('../monero_web_worker.js');
-            monerojs.LibraryUtils.WORKER = new Worker(URL.createObjectURL(blob)); //(monerojs.LibraryUtils.WORKER_DIST_PATH);*/
             const monero_worker = new AtomicSwapWebWorker("monero");
 
             monerojs.LibraryUtils.WORKER = monero_worker.worker;
