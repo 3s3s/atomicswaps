@@ -496,6 +496,7 @@ exports.WaitConfirmation = async function (swapID)
                 return; //to prevent double spent
             }
             
+            UpdateSwap(swapID, "status", 82)
             const ret = await xmr.SendMoney(refundXMR, ctx.sharedMoneroAddress, buy_amount/100000000);
         
             if (ret.result == false)

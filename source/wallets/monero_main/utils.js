@@ -52,17 +52,25 @@ exports.Wallet = async function(params)
     {
         let viewOnlyWallet = null;
         try {
-            if (g_openWallets[utils.Hash160(walletName)] == true)
+            if (g_openWallets[utils.Hash160(walletName)] && !!g_openWallets[utils.Hash160(walletName)].isOpen)
             {
-                log("Wait Monero Wallet Message bacause wait old...")
-                return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
+                if (!!g_openWallets[utils.Hash160(walletName)].isSynced)
+                {
+                    log("Wait Monero Wallet ProcessMessage bacause wait old...")
+                    return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
+                }
+                else
+                {
+                    log("Cancel Monero Wallet ProcessMessage bacause wait syncing...")
+                    return ok(null)
+                }
             }
 
-            g_openWallets[utils.Hash160(walletName)] = true;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: true, isSynced: false};
 
             const daemon = await monerojs.connectToDaemonRpc(RPC.host);
             if (!await daemon.isConnected()) {
-                g_openWallets[utils.Hash160(walletName)] = false;
+                g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
                 log("Cancel Monero Wallet Message bacause daemon not connected...")
                 return ok(null);
             }
@@ -92,8 +100,9 @@ exports.Wallet = async function(params)
             {
                 log("Start sync Monero wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
                 await viewOnlyWallet.sync(); 
-                log("End sync Monero wallet")
+                log("End sync Monero wallet height="+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
             }
+            g_openWallets[utils.Hash160(walletName)].isSynced = await viewOnlyWallet.isSynced();
 
             let ret = null;
             
@@ -122,7 +131,7 @@ exports.Wallet = async function(params)
                     if (viewOnlyWallet)
                         await viewOnlyWallet.close(true);
 
-                    g_openWallets[utils.Hash160(walletName)] = false;
+                    g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
                     return {result: false, message: `Network error. Try with another xmr address or try later (about 1 hour). Raw message: ${e.message}.`}
                 }
 
@@ -149,8 +158,8 @@ exports.Wallet = async function(params)
                     /*const walletNamePath = walletName; 
                     fs.unlinkSync(walletNamePath);
                     fs.unlinkSync(walletNamePath+".address.txt");
-                    fs.unlinkSync(walletNamePath+".keys");
-                    g_openWallets[utils.Hash160(walletName)] = false;*/
+                    fs.unlinkSync(walletNamePath+".keys");*/
+                    g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
 
                     console.log(e)
                     return ok(null)
@@ -166,7 +175,7 @@ exports.Wallet = async function(params)
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
 
-            g_openWallets[utils.Hash160(walletName)] = false;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
 
             return ok( ret );
         }
@@ -174,7 +183,7 @@ exports.Wallet = async function(params)
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
 
-            g_openWallets[utils.Hash160(walletName)] = false;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
             console.log(e);
 
             let ret = JSON.stringify({result: false, message: e.message});
@@ -331,7 +340,7 @@ async function processWithdraw(address, balance, address_to, amount)
         let offlineWallet = await monerojs.createWalletFull({
             networkType: "mainnet",
             password: "supersecretpassword123",
-            primaryAddress: "535xp3D6VXzNS7dzoVeoyPhTJX17TTwtNJ3SLsyBa1B8Xqmo8z6RcULYQ6KVtLq3TJ4szc1AEZi98H8fLXDekkn7KDJKnHs", //address.address,
+            primaryAddress: address.address,
             privateViewKey: address.privViewKey,
             privateSpendKey: address.privSpentKey
         });
@@ -358,6 +367,11 @@ async function processWithdraw(address, balance, address_to, amount)
                                 request: request,
                                 coin: "xmr"}, async result => 
             {
+                if (result && !!result.__message__)
+                {
+                    return ok({result: false, message: result.__message__})
+                }
+
                 const tmp = result;
                 try {
                     const unsignedTx = JSON.parse(result)

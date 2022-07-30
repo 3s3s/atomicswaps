@@ -53,17 +53,25 @@ exports.Wallet = async function(params)
     {
         let viewOnlyWallet = null;
         try {
-            if (g_openWallets[utils.Hash160(walletName)] == true)
+            if (g_openWallets[utils.Hash160(walletName)] && !!g_openWallets[utils.Hash160(walletName)].isOpen)
             {
-                log("Wait USDX Wallet Message bacause wait old...")
-                return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
+                if (!!g_openWallets[utils.Hash160(walletName)].isSynced)
+                {
+                    log("Wait usdx Wallet ProcessMessage bacause wait old...")
+                    return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
+                }
+                else
+                {
+                    log("Cancel usdx Wallet ProcessMessage bacause wait syncing...")
+                    return ok(null)
+                }
             }
 
-            g_openWallets[utils.Hash160(walletName)] = true;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: true, isSynced: false};
 
             const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
             if (!await daemon.isConnected()) {
-                g_openWallets[utils.Hash160(walletName)] = false;
+                g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
                 log("Cancel USDX Wallet Message bacause daemon not connected...")
                 return ok(null);
             }
@@ -95,6 +103,7 @@ exports.Wallet = async function(params)
                 await viewOnlyWallet.sync(); 
                 log("End sync USDX wallet")
             }
+            g_openWallets[utils.Hash160(walletName)].isSynced = await viewOnlyWallet.isSynced();
 
             let ret = null;
             
@@ -123,7 +132,7 @@ exports.Wallet = async function(params)
                     if (viewOnlyWallet)
                         await viewOnlyWallet.close(true);
 
-                    g_openWallets[utils.Hash160(walletName)] = false;
+                    g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
 
                     return {result: false, message: `Network error. Try with another USDX address or try later (about 1 hour). Raw message: ${e.message}.`}
                 }
@@ -156,7 +165,7 @@ exports.Wallet = async function(params)
                         fs.unlinkSync(walletNamePath+".keys");
                     }
                         
-                    g_openWallets[utils.Hash160(walletName)] = false;
+                    g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
 
                     console.log(e)
                     return ok(null)
@@ -172,7 +181,7 @@ exports.Wallet = async function(params)
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
 
-            g_openWallets[utils.Hash160(walletName)] = false;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
 
             return ok( ret );
         }
@@ -180,7 +189,7 @@ exports.Wallet = async function(params)
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
 
-            g_openWallets[utils.Hash160(walletName)] = false;
+            g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
             console.log(e);
 
             let ret = JSON.stringify({result: false, message: e.message});
@@ -364,6 +373,10 @@ async function processWithdraw(address, balance, address_to, amount)
                                 request: request,
                                 coin: "usdx"}, async result => 
             {
+                if (result && !!result.__message__)
+                {
+                    return ok({result: false, message: result.__message__})
+                }
                 const tmp = result;
                 try {
                     const unsignedTx = JSON.parse(result)
