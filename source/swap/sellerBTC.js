@@ -4,6 +4,7 @@ const utils = require("../utils")
 const multicoin = require("multicoinjs-lib");
 const bitcoin = require("bitcoinjs-lib")
 const tbtc_utils = require("../wallets/bitcoin_test/utils")
+const btc_utils = require("../wallets/bitcoin_main/utils")
 const monero = require("../wallets/monero")
 const customP2P = require("../server/p2p/custom")
 const ordersP2P = require("../server/p2p/orders")
@@ -70,11 +71,14 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
     //const pubXMR_y = new BN(swapInfoBuyer.pubBuyerSpentKey, "hex", "le").toString("hex")
     utils.SwapLog(`Initiate sell ${swapInfoBuyer.sell_coin} transaction`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
 
-    const balanceCheck = swapInfoBuyer.buy_coin == "txmr" ?
-        await txmr.GetBalance(swapInfoBuyer.balanceCheck):
-        await usdx.GetBalance(swapInfoBuyer.balanceCheck);
+    const balanceCheck = 
+        swapInfoBuyer.buy_coin == "txmr" ?
+            await txmr.GetBalance(swapInfoBuyer.balanceCheck):
+        swapInfoBuyer.buy_coin == "xmr" ?  
+            await xmr.GetBalance(swapInfoBuyer.balanceCheck):
+            await usdx.GetBalance(swapInfoBuyer.balanceCheck);
 
-    if (swapInfoBuyer.buy_coin == "txmr" && balanceCheck.confirmed/10000 < swapInfoBuyer.buy_amount)
+    if ((swapInfoBuyer.buy_coin == "txmr" || swapInfoBuyer.buy_coin == "xmr") && balanceCheck.confirmed/10000 < swapInfoBuyer.buy_amount)
     {
         utils.SwapLog(`ERROR: Buyer has insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`, "s", swapInfoBuyer.swapID, swapInfoBuyer)
         return {result: false, message: `insufficient funds ${balanceCheck.confirmed/1000000000000} < ${swapInfoBuyer.buy_amount/100000000}`};
@@ -107,7 +111,12 @@ exports.InitBuyOrder = async function(orderSeller, swapInfoBuyer)
 
     const fee = common.getFee(common.NETWORK[swapInfoBuyer.sell_coin]);
 
-    const list = (swapInfoBuyer.sell_coin == "tbtc") ? await tbtc_utils.listunspent(orderSeller.addressBTC) : false;
+    const list = 
+        swapInfoBuyer.sell_coin == "tbtc" ? 
+            await tbtc_utils.listunspent(orderSeller.addressBTC) : 
+        swapInfoBuyer.sell_coin == "btc" ?
+            await btc_utils.listunspent(orderSeller.addressBTC) : 
+            false;
 
     if (!list) return {result: false, message: "listunspent failed"};
 
@@ -806,10 +815,10 @@ async function WaitSellTransaction(swapID)
             {                
                 utils.SwapLog(`Error${ret.message ? ": "+ret.message : ""} will wait 10 min<br>address: ${checkAddress.address}<br>private spend key: ${checkAddress.privSpentKey}<br>private view key: ${checkAddress.privViewKey}`, "s", swapID)
 
-                if (ret.code == 4) //too small amount - need stop waiting
-                {
-                    return EndSwap(swapID)
-                }
+                //if (ret.code == 4) //too small amount - need stop waiting
+                //{
+                //    return EndSwap(swapID)
+                //}
                 return setTimeout(WaitSellTransaction, 1000*60*10, swapID)
             }
 
