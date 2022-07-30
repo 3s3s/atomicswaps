@@ -607,7 +607,7 @@ async function WaitRefund(swapID)
 
     //g_Transactions[swapID]["got_refund"] = true;
     //utils.SaveObjectToDB(g_Transactions[swapID], `swap_buy_${swapID}`)
-    UpdateSwap(swapID, "got_refund", true)
+    //UpdateSwap(swapID, "got_refund", true)
     try {
         for (let i=1; i<txs.length; i++)
         {
@@ -624,7 +624,7 @@ async function WaitRefund(swapID)
 
             const checkAddress = monero.GetAddressFromPrivateKeysAB(
                 ctx.privBuyerViewKey, ctx.privBuyerSpentKey, 
-                ctx.privSellerViewKey, privSellerSpentKey.toString("hex")) //, ctx.pubBuyerSpentKey, ctx.pubSellerSpentKey)
+                ctx.privSellerViewKey, privSellerSpentKey.toString("hex"), buy_coin) //, ctx.pubBuyerSpentKey, ctx.pubSellerSpentKey)
 
             if (checkAddress.address != ctx.sharedMoneroAddress) 
                 continue;
@@ -635,7 +635,7 @@ async function WaitRefund(swapID)
 
             //g_Transactions[swapID]["seller_refund"] = true;
             //utils.SaveObjectToDB(g_Transactions[swapID], `swap_buy_${swapID}`)
-            UpdateSwap(swapID, "seller_refund", true)
+            //UpdateSwap(swapID, "seller_refund", true)
 
             //g_Transactions[swapID]["status"] = 99
             UpdateSwap(swapID, "status", 99)
@@ -680,8 +680,8 @@ async function getCancel (swapID)
     if (!g_Transactions[swapID])
         return;
 
-    if (g_Transactions[swapID]["got_refund"] || g_Transactions[swapID]["seller_refund"])
-        return EndSwap(swapID);
+    //if (g_Transactions[swapID]["got_refund"] || g_Transactions[swapID]["seller_refund"])
+    //    return EndSwap(swapID);
   
     //g_Transactions[swapID]["status"] = 99
     UpdateSwap(swapID, "status", 99)

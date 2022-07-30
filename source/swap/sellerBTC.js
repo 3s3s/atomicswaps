@@ -796,7 +796,7 @@ async function WaitSellTransaction(swapID)
 
             const checkAddress = monero.GetAddressFromPrivateKeysAB(
                 ctx_a.privBuyerViewKey, privBuyerSpentKey.toString("hex"), 
-                ctx_a.privSellerViewKey, ctx_a.privSellerSpentKey) //, ctx.pubBuyerSpentKey, ctx.pubSellerSpentKey)
+                ctx_a.privSellerViewKey, ctx_a.privSellerSpentKey, ctx.buy_coin) //, ctx.pubBuyerSpentKey, ctx.pubSellerSpentKey)
 
             if (checkAddress.address != ctx_a.sharedMoneroAddress.address) 
                 continue;

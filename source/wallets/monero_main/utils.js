@@ -54,14 +54,14 @@ exports.Wallet = async function(params)
         try {
             if (g_openWallets[utils.Hash160(walletName)] && !!g_openWallets[utils.Hash160(walletName)].isOpen)
             {
-                if (!!g_openWallets[utils.Hash160(walletName)].isSynced)
+                if (!!g_openWallets[utils.Hash160(walletName)].isSynced && reqObject.request != "getBalance")
                 {
                     log("Wait Monero Wallet ProcessMessage bacause wait old...")
                     return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
                 }
                 else
                 {
-                    log("Cancel Monero Wallet ProcessMessage bacause wait syncing...")
+                    log("Cancel Monero Wallet getBalance bacause wait syncing...")
                     return ok(null)
                 }
             }
@@ -108,7 +108,7 @@ exports.Wallet = async function(params)
             
             if (reqObject.request == "getBalance")
             {
-                log("Handle: getBalance")
+                log("Handle: getBalance "+reqObject.params[0])
                 const outputsHex = await viewOnlyWallet.exportOutputs(true);
                 const balance = await viewOnlyWallet.getBalance();
                 
@@ -259,6 +259,7 @@ exports.GetBalance = function(address, callback = null)
                 }
                 catch(e) {
                     console.log(e)
+                    console.log(balance)
                     ok(data)
                 }
             });

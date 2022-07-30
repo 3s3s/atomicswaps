@@ -129,10 +129,17 @@ class MoneroAddress {
     #network = exports.getNetwork();
     #publicSpentKey = null;
     #publicViewKey = null;
-    constructor(publicSpent, publicView)
+    constructor(publicSpent, publicView, network)
     {
-        this.#publicSpentKey = publicSpent
-        this.#publicViewKey = publicView
+        this.#publicSpentKey = publicSpent;
+        this.#publicViewKey = publicView;
+
+        if (network == "txmr")
+            this.#network = NETWORKS.stagenet;
+            if (network == "xmr")
+            this.#network = NETWORKS.main;
+        if (network == "usdx")
+            this.#network = NETWORKS.usdx;
     }
     GetAddressHex()
     {
@@ -231,7 +238,7 @@ exports.GetAddressFromPublicKeysAB = function(privAliceView, pubAliceSpent, priv
     };
 }
 
-exports.GetAddressFromPrivateKeysAB = function(privAliceView, privAliceSpent, privBobView, privBobSpent)//, pubBuyerSpentKey, pubSellerSpentKey)
+exports.GetAddressFromPrivateKeysAB = function(privAliceView, privAliceSpent, privBobView, privBobSpent, network)//, pubBuyerSpentKey, pubSellerSpentKey)
 {
     const viewPairA = new KeyPair(Buffer.from(privAliceView, "hex"));
     const viewPairB = new KeyPair(Buffer.from(privBobView, "hex"));
@@ -275,7 +282,7 @@ exports.GetAddressFromPrivateKeysAB = function(privAliceView, privAliceSpent, pr
     ////
     //const sumPublicSpent_check = sodium.crypto_core_ed25519_scalar_add(Buffer.from(pubBuyerSpentKey, "hex"), Buffer.from(pubSellerSpentKey, "hex"), "hex"); //sumPublicSpent
     ////
-    const address = new MoneroAddress(Buffer.from(sumPublicSpent, "hex"), Buffer.from(sumPublicView, "hex"))
+    const address = new MoneroAddress(Buffer.from(sumPublicSpent, "hex"), Buffer.from(sumPublicView, "hex"), network)
 
     return {
         address: address.GetAddress58(), 

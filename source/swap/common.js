@@ -141,8 +141,8 @@ exports.CreateAtaptorSignature_check = function(hash256_hex, privateKey, T_point
 }*/
 
 exports.SELL_SEQUENCE = bip68.encode({ blocks: 1 });
-exports.REFUND_SEQUENCE = bip68.encode({ blocks: 4 });
-exports.CANCEL_SEQUENCE = bip68.encode({ blocks: 8 });
+exports.REFUND_SEQUENCE = bip68.encode({ blocks: 10 });
+exports.CANCEL_SEQUENCE = bip68.encode({ blocks: 20 });
 
 function GetRedeemScript(publicGetBTC, publicRefundBTC, hashSecret)
 {
@@ -408,7 +408,7 @@ exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
             const refund_amount = amount - fee;
 
             if (refund_amount <= 0)
-                return ok(ok({result: false, code: 4, message: `SendMoney error: too small amount ${(refund_amount/100000000).toFixed(8)} (${coin})`}));
+                return ok(ok({result: false, code: 4, message: `SendMoney error (dust): amount-fee = ${(refund_amount/100000000).toFixed(8)} (${coin})`}));
 
             const ret = await txmr_utils.SendMoney(address, refundAddress, refund_amount/100000000);
             if (ret.result == false)
@@ -420,11 +420,11 @@ exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
         }
         if (coin == "xmr")
         {
-            const fee = 0.001*100000000;
+            const fee = 0.0001*100000000;
             const refund_amount = amount - fee;
 
             if (refund_amount <= 0)
-                return ok(ok({result: false, code: 4, message: `SendMoney error: too small amount ${(refund_amount/100000000).toFixed(8)} (${coin})`}));
+                return ok(ok({result: false, code: 4, message: `SendMoney error (dust): amount-fee = ${(refund_amount/100000000).toFixed(8)} (${coin})`}));
 
             const ret = await xmr_utils.SendMoney(address, refundAddress, refund_amount/100000000);
             if (ret.result == false)
@@ -440,7 +440,7 @@ exports.RefundMonero = function(address, refundAddress, amount, coin, swapID)
             const refund_amount = amount - fee;
 
             if (refund_amount <= 0)
-                return ok(ok({result: false, code: 4, message: `SendMoney error: too small amount ${(refund_amount/100000000).toFixed(2)} (${coin})`}));
+                return ok(ok({result: false, code: 4, message: `SendMoney error (dust): amount-fee = ${(refund_amount/100000000).toFixed(2)} (${coin})`}));
             
             const ret = await usdx_utils.SendMoney(address, refundAddress, refund_amount/100000000);
             if (ret.result == false)

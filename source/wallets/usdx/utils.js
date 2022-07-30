@@ -55,14 +55,14 @@ exports.Wallet = async function(params)
         try {
             if (g_openWallets[utils.Hash160(walletName)] && !!g_openWallets[utils.Hash160(walletName)].isOpen)
             {
-                if (!!g_openWallets[utils.Hash160(walletName)].isSynced)
+                if (!!g_openWallets[utils.Hash160(walletName)].isSynced && reqObject.request != "getBalance")
                 {
                     log("Wait usdx Wallet ProcessMessage bacause wait old...")
                     return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
                 }
                 else
                 {
-                    log("Cancel usdx Wallet ProcessMessage bacause wait syncing...")
+                    log("Cancel usdx Wallet getBalance bacause wait syncing...")
                     return ok(null)
                 }
             }
