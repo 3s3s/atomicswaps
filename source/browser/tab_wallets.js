@@ -111,7 +111,7 @@ $("#createorder_sell_ok").on("click", async e => {
     const sell_amount = $("#sell_amount").val();
     const buy_amount = $("#buy_amount").val();
     const sell_coin = $("#coin_to_sell").text();
-    const buy_coin = $("#coin_to_buy").text();
+    const buy_coin = $('#cointobuy').find(":selected").text();
 
     let result = {status: false};
     
@@ -155,6 +155,8 @@ $("#btn_monerotest_sell").on("click", e => {
     $("#buy_amount").empty();
 
     $("#coin_to_buy").text("tbtc")
+    $("#cointobuy").val("tbtc")
+
     $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("txmr")
 
@@ -206,6 +208,8 @@ $("#btn_monero_sell").on("click", e => {
     $("#buy_amount").empty();
 
     $("#coin_to_buy").text("tbtc")
+    $("#cointobuy").val("tbtc")
+
     $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("xmr")
 
@@ -258,6 +262,8 @@ $("#btn_usdx_sell").on("click", e => {
     $("#buy_amount").empty();
 
     $("#coin_to_buy").text("tbtc")
+    $("#cointobuy").val("tbtc")
+
     $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("usdx")
 
@@ -315,14 +321,18 @@ $("#btn_bitcointest_sell").on("click", e => {
         $("#coin_to_sell").text("tbtc")
 
         $("#coin_to_buy").text("txmr")
+        $("#cointobuy").val("txmr")
+
         $("#coin_to_buy2").hide()
     }
     else
     {
         $("#coin_to_sell").text("tbtc");
 
-        $("#coin_to_buy").text("usdx");
-        $("#coin_to_buy2").text("xmr");
+        $("#coin_to_buy2").text("usdx");
+        $("#coin_to_buy").text("xmr");
+        $("#cointobuy").val("xmr")
+        
         $("#coin_to_buy2").show(); //.hide();//.show()
     }
 
