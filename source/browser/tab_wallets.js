@@ -7,6 +7,7 @@ const txmr = require("../wallets/monero_test/utils")
 const xmr = require("../wallets/monero_main/utils")
 const usdx = require("../wallets/usdx/utils")
 const tbtc = require("../wallets/bitcoin_test/utils")
+const btc = require("../wallets/bitcoin_main/utils")
 const p2p_orders = require("../server/p2p/orders")
 const utils = require("../utils")
 const common = require("./common")
@@ -207,8 +208,8 @@ $("#btn_monero_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-    $("#coin_to_buy").text("tbtc")
-    $("#cointobuy").val("tbtc")
+    $("#coin_to_buy").text("btc")
+    $("#cointobuy").val("btc")
 
     $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("xmr")
@@ -261,8 +262,8 @@ $("#btn_usdx_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-    $("#coin_to_buy").text("tbtc")
-    $("#cointobuy").val("tbtc")
+    $("#coin_to_buy").text("btc")
+    $("#cointobuy").val("btc")
 
     $("#coin_to_buy2").hide();
     $("#coin_to_sell").text("usdx")
@@ -327,7 +328,7 @@ $("#btn_bitcointest_sell").on("click", e => {
     }
     else
     {
-        $("#coin_to_sell").text("tbtc");
+        $("#coin_to_sell").text("btc");
 
         $("#coin_to_buy2").text("usdx");
         $("#coin_to_buy").text("xmr");
@@ -365,7 +366,8 @@ $("#btn_bitcointest_withdraw").on("click", e => {
     $("#withdraw_address").empty();
     $("#withdraw_address_amount").empty();
 
-    $("#id_withdraw_coin").empty().text("tbtc")
+    $("#id_withdraw_coin").empty().text(main.BLOCKCHAIN == "testnet" ? "tbtc" : "btc")
+
     g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
     g_modal.show();  
 
@@ -390,6 +392,19 @@ $("#withdraw_ok").on("click", async e => {
         const ret = await tbtc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
 
         ConfirmTransaction("tbtc", ret.amount, ret.address_to, ret.raw);
+
+        $("#btn_bitcointest_withdraw").prop('disabled', false);
+        $("#btn_bitcointest_withdraw").text("Withdraw");
+
+    }
+    if (coin == "btc")
+    {
+        $("#btn_bitcointest_withdraw").prop('disabled', true);
+        $("#btn_bitcointest_withdraw").text("Processing...");
+
+        const ret = await btc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
+
+        ConfirmTransaction("btc", ret.amount, ret.address_to, ret.raw);
 
         $("#btn_bitcointest_withdraw").prop('disabled', false);
         $("#btn_bitcointest_withdraw").text("Withdraw");
@@ -468,6 +483,22 @@ $("#withdraw_confirm").on("click", async e => {
         $("#btn_bitcointest_withdraw").text("Processing...");
 
         const txid = await tbtc.broadcast(rawTX);
+
+        if (txid.length > 50)
+            common.AlertSuccess("txid: "+txid)
+        else
+            common.AlertFail(txid);
+
+        $("#btn_bitcointest_withdraw").prop('disabled', false);
+        $("#btn_bitcointest_withdraw").text("Withdraw");
+        return;
+    }
+    if (coin == "btc")
+    {
+        $("#btn_bitcointest_withdraw").prop('disabled', true);
+        $("#btn_bitcointest_withdraw").text("Processing...");
+
+        const txid = await btc.broadcast(rawTX);
 
         if (txid.length > 50)
             common.AlertSuccess("txid: "+txid)

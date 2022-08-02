@@ -36,7 +36,7 @@ exports.HandleCreateOrder = async function(params)
             request: "blockchain.scripthash.get_balance",
             params: [utils.Hash256("76a914"+order.seller_pubkey + "88ac", "hex", true)]});
 
-        const strBalanceFull = await btc_utils.Electrum({request: request, coin: "tbtc"})
+        const strBalanceFull = await btc_utils.Electrum({request: request, coin: "btc"})
 
         if (strBalanceFull == null)
             return null; //{result: false, message: "Check bakance error"};

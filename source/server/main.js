@@ -16,7 +16,7 @@ p2p.StartServer(options)
 
 const utils = require("../utils")
 setInterval(() => {
-    const sell_coins = ["tbtc"];
+    const sell_coins = ["tbtc", "btc"];
 
     for (let i=0; i<sell_coins.length; i++)
     {

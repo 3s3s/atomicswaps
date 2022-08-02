@@ -422,7 +422,7 @@ exports.InitBuyOrder = function(params)
 
     if (!myOrder || !myOrder.order || !myOrder.order.active) return null;
 
-    if (swapInfo.sell_coin == "tbtc")
+    if (swapInfo.sell_coin == "tbtc" || swapInfo.sell_coin == "btc")
       return sellerBTC.InitBuyOrder(myOrder, swapInfo);
 
     return {result: true};

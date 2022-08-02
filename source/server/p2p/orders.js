@@ -265,7 +265,7 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
                 if (!result || result.result == false)
                     return ok (result);
 
-                if (sell_coin == "tbtc")
+                if (sell_coin == "tbtc" || sell_coin == "btc")
                 {
                     const ret = buyerBTC.ProcessBuyOrder(result, swapInfoBuyer, addressXMR)
                     return ok(ret);
@@ -293,7 +293,7 @@ exports.getAdaptorSignatureFromBuyer = function(params)
 
     if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
 
-    if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
+    if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc" || g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "btc")
     {
         const ret = buyerBTC.getAdaptorSignatureFromBuyer(infoDLEQ, g_Swaps[params.swapID]);
         if (ret.result == false && !!ret.stop)
@@ -326,16 +326,12 @@ exports.getSwapTransactionFromBuyer = function(params)
     
         const infoAdaptor = _order;
     
-        //if (!g_Swaps[params.swapID] || !g_Swaps[params.swapID].swapInfoBuyer) return null;
-    
-        //if (g_Swaps[params.swapID].swapInfoBuyer.sell_coin == "tbtc")
-          return buyerBTC.getSwapTransactionFromBuyer(infoAdaptor, params.swapID); //g_Swaps[params.swapID]);
-    
-        //return {result: true};
-      }
-      catch(e) {
+  
+        return buyerBTC.getSwapTransactionFromBuyer(infoAdaptor, params.swapID); //g_Swaps[params.swapID]);
+    }
+    catch(e) {
           console.log(e);
           return null;
-      }
+    }
     
 }

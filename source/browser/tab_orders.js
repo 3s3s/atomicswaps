@@ -2,6 +2,7 @@
 "use strict";
 
 const tbtc = require("../wallets/bitcoin_test/utils")
+const btc = require("../wallets/bitcoin_main/utils")
 const txmr = require("../wallets/monero_test/utils")
 const xmr = require("../wallets/monero_main/utils")
 const usdx = require("../wallets/usdx/utils")
@@ -191,6 +192,13 @@ function HaveBalance(mnemonic, buy_coin, buy_amount)
         if (buy_coin == "tbtc")
         {
             tbtc.GetBalance(mnemonic, balance => {
+                if (buy_amount / 100000000 >= (balance.confirmed / 100000000).toFixed(8)*1.0 || 0) return ok(false)
+                return ok (true)
+            })
+        }
+        if (buy_coin == "btc")
+        {
+            btc.GetBalance(mnemonic, balance => {
                 if (buy_amount / 100000000 >= (balance.confirmed / 100000000).toFixed(8)*1.0 || 0) return ok(false)
                 return ok (true)
             })

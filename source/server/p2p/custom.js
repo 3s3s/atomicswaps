@@ -11,6 +11,8 @@ p2p.on("electrum", async params =>
     let answer = null;
     if (params["coin"] == "tbtc")
         answer = await require("../../wallets/bitcoin_test/utils").Electrum(params)
+    if (params["coin"] == "btc")
+        answer = await require("../../wallets/bitcoin_main/utils").Electrum(params)
 
     return p2p.ProcessAnswer(params, answer)
 })
