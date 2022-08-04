@@ -17,6 +17,7 @@ exports.BLOCKCHAIN = "testnet"
 $("#wallet_usdx").hide();
 $("#wallet_txmr").hide();
 $("#wallet_tbtc").hide();
+$("#wallet_btc").hide();
 $("#wallet_xmr").hide();
 $("#wallet_btc").hide();
 
@@ -48,7 +49,7 @@ function OnNetworkChange()
 
         $("#wallet_usdx").show()
         $("#wallet_xmr").show()
-        $("#wallet_tbtc").show()
+        $("#wallet_btc").show()
         
         //$("#coin_to_buy").text("usdx")
         //$("#coin_to_buy").text("xmr")

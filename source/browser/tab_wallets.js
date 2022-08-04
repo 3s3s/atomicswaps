@@ -23,6 +23,7 @@ exports.Init = function()
     g_modal.show();  
 
     $("#btn_bitcointest_withdraw").prop('disabled', true);
+    $("#btn_bitcoinmain_withdraw").prop('disabled', true);
 
     setInterval(exports.ShowBalances, 60*1000);  
 }
@@ -307,6 +308,64 @@ $("#btn_usdx_withdraw").on("click", async e => {
 })
 
 /////////////////////////////////////////////////////////////////////
+///                       BTC                                      //
+/////////////////////////////////////////////////////////////////////
+//on click sell btc
+$("#btn_bitcoinmain_sell").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#sell_amount").empty();
+    $("#buy_amount").empty();
+
+    if (main.BLOCKCHAIN == "testnet")
+        return;
+
+    $("#coin_to_sell").text("btc");
+
+    $("#coin_to_buy2").text("usdx");
+    $("#coin_to_buy").text("xmr");
+    $("#cointobuy").val("xmr")
+        
+    $("#coin_to_buy2").show(); //.hide();//.show()
+
+
+    g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
+    g_modal.show();  
+})
+
+//on click btc deposit
+$("#btn_bitcoinmain_deposit").on("click", e => {
+    $("#alert_container").empty();
+
+    const mnemonic = utils.getMnemonic();
+
+    if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
+        return common.AlertFail();
+
+    $("#deposit_address").empty().val(btc.GetAddress(mnemonic).p2pkh.address);
+
+    $("#accordionPrivKeys").hide()
+
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_depositaddress_dialog'))
+    g_modal.show();  
+
+})
+
+//on click btc withdraw
+$("#btn_bitcoinmain_withdraw").on("click", e => {
+    $("#alert_container").empty();
+
+    $("#withdraw_address").empty();
+    $("#withdraw_address_amount").empty();
+
+    $("#id_withdraw_coin").empty().text("btc")
+
+    g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
+    g_modal.show();  
+
+})
+
+/////////////////////////////////////////////////////////////////////
 ///                       TBTC                                     //
 /////////////////////////////////////////////////////////////////////
 
@@ -317,7 +376,17 @@ $("#btn_bitcointest_sell").on("click", e => {
     $("#sell_amount").empty();
     $("#buy_amount").empty();
 
-    if (main.BLOCKCHAIN == "testnet")
+    if (main.BLOCKCHAIN != "testnet")
+        return;
+
+    $("#coin_to_sell").text("tbtc")
+
+    $("#coin_to_buy").text("txmr")
+    $("#cointobuy").val("txmr")
+
+    $("#coin_to_buy2").hide()
+
+    /*if (main.BLOCKCHAIN == "testnet")
     {
         $("#coin_to_sell").text("tbtc")
 
@@ -335,7 +404,7 @@ $("#btn_bitcointest_sell").on("click", e => {
         $("#cointobuy").val("xmr")
         
         $("#coin_to_buy2").show(); //.hide();//.show()
-    }
+    }*/
 
     g_modal = new bootstrap.Modal(document.getElementById('createorder_sell_dialog'))
     g_modal.show();  
@@ -366,7 +435,7 @@ $("#btn_bitcointest_withdraw").on("click", e => {
     $("#withdraw_address").empty();
     $("#withdraw_address_amount").empty();
 
-    $("#id_withdraw_coin").empty().text(main.BLOCKCHAIN == "testnet" ? "tbtc" : "btc")
+    $("#id_withdraw_coin").empty().text("tbtc")
 
     g_modal = new bootstrap.Modal(document.getElementById('wallet_withdraw_dialog'))
     g_modal.show();  
@@ -399,15 +468,15 @@ $("#withdraw_ok").on("click", async e => {
     }
     if (coin == "btc")
     {
-        $("#btn_bitcointest_withdraw").prop('disabled', true);
-        $("#btn_bitcointest_withdraw").text("Processing...");
+        $("#btn_bitcoinmain_withdraw").prop('disabled', true);
+        $("#btn_bitcoinmain_withdraw").text("Processing...");
 
         const ret = await btc.withdraw(mnemonic, $("#withdraw_address").val(), $("#withdraw_address_amount").val());
 
         ConfirmTransaction("btc", ret.amount, ret.address_to, ret.raw);
 
-        $("#btn_bitcointest_withdraw").prop('disabled', false);
-        $("#btn_bitcointest_withdraw").text("Withdraw");
+        $("#btn_bitcoinmain_withdraw").prop('disabled', false);
+        $("#btn_bitcoinmain_withdraw").text("Withdraw");
 
     }
     if (coin == "txmr")
@@ -495,8 +564,8 @@ $("#withdraw_confirm").on("click", async e => {
     }
     if (coin == "btc")
     {
-        $("#btn_bitcointest_withdraw").prop('disabled', true);
-        $("#btn_bitcointest_withdraw").text("Processing...");
+        $("#btn_bitcoinmain_withdraw").prop('disabled', true);
+        $("#btn_bitcoinmain_withdraw").text("Processing...");
 
         const txid = await btc.broadcast(rawTX);
 
@@ -505,8 +574,8 @@ $("#withdraw_confirm").on("click", async e => {
         else
             common.AlertFail(txid);
 
-        $("#btn_bitcointest_withdraw").prop('disabled', false);
-        $("#btn_bitcointest_withdraw").text("Withdraw");
+        $("#btn_bitcoinmain_withdraw").prop('disabled', false);
+        $("#btn_bitcoinmain_withdraw").text("Withdraw");
         return;
     }
     if (coin == "txmr")
@@ -574,9 +643,10 @@ exports.ShowBalances = async function(force = true)
     if (!connected.length)
     {
         $("#txt_balance_bitcointest").empty().append($("<span class='text-danger'>Offline</span>"))
-        $("#txt_balance_btc").empty().append($("<span class='text-danger'>Offline</span>"))
+        $("#txt_balance_bitcoinmain").empty().append($("<span class='text-danger'>Offline</span>"))
         
         $("#btn_bitcointest_withdraw").prop('disabled', true);
+        $("#btn_bitcoinmain_withdraw").prop('disabled', true);
 
 
         $("#txt_balance_monerotest").empty().append($("<span class='text-danger'>Offline</span>"))
@@ -599,6 +669,8 @@ exports.ShowBalances = async function(force = true)
 
     if ($("#btn_bitcointest_withdraw").text() == "Withdraw")
         $("#btn_bitcointest_withdraw").prop('disabled', false);
+    if ($("#btn_bitcoinmain_withdraw").text() == "Withdraw")
+        $("#btn_bitcoinmain_withdraw").prop('disabled', false);
 
     const mnemonic = utils.getMnemonic();
 
@@ -620,9 +692,9 @@ exports.ShowBalances = async function(force = true)
     }
     else
     {
-        $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
-        tbtc.GetBalance(mnemonic, balance => {
-            $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
+        $("#txt_balance_bitcoinmain").empty().append($("<span class='text-warning'>wait update...</span>"))
+        btc.GetBalance(mnemonic, balance => {
+            $("#txt_balance_bitcoinmain").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
         $("#txt_balance_xmr").empty().append($("<span class='text-warning'>wait update...</span>"))
