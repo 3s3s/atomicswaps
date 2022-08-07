@@ -26,10 +26,10 @@ exports.NETWORK = {
 
 exports.getFee = function(network)
 {
-    if (network == bitcoin.networks.testnet) return 0.0001*100000000;
-    if (network == bitcoin.networks.bitcoin) return 0.00001*100000000;
+    if (network == bitcoin.networks.testnet) return (0.0001*100000000).toFixed(0)*1;
+    if (network == bitcoin.networks.bitcoin) return (0.000005*100000000).toFixed(0)*1;
 
-    return 0.0001*100000000;
+    return (0.0001*100000000).toFixed(0)*1;
 }
 
 exports.CreateFullSignature = function(hash256_hex, privateKey)

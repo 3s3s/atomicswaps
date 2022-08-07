@@ -31,7 +31,7 @@ exports.Electrum = function(params)
                 ok( JSON.stringify(ret) ); 
         }catch(e){
             console.error(e)
-            ok({result: false, message: e.message})
+            ok({result: false, message: e.message || e})
         }
         await ecl.close() // disconnect(promise)*/
     })

@@ -106,6 +106,22 @@ $("#old_password_button").on("click", e => {
     }
 })
 
+function IsDust(amount, coin)
+{
+    if (coin == "btc" && amount <= 2000)
+        return true;
+    if (coin == "tbtc" && amount <= 20000)
+        return true;
+    if (coin == "xmr" && amount <= 2000)
+        return true;
+    if (coin == "txmr" && amount <= 20000)
+        return true;
+    if (coin == "usdx" && amount*100000000 <= 0.02)
+        return true;
+
+    return false;
+}
+
 $("#createorder_sell_ok").on("click", async e => {
     $("#alert_container").empty();
     g_modal.hide();
@@ -121,6 +137,12 @@ $("#createorder_sell_ok").on("click", async e => {
 
     if (!mn.validateMnemonic(mnemonic, mn.PREFIXES.standard))
         return common.AlertFail();
+
+    if (IsDust((sell_amount*100000000).toFixed(0)*1, sell_coin))
+        return common.AlertFail("Too small sell amount "+sell_coin);
+    if (IsDust((buy_amount*100000000).toFixed(0)*1, buy_coin))
+        return common.AlertFail("Too buy sell amount "+buy_coin);
+ 
 
     common.ShowProgressDialog(() => {
         common.AlertFail("Something wrong: timeout");

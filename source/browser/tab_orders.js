@@ -79,7 +79,7 @@ async function UpdateTable(currentSavedOrders)
             common.ShowProgressDialog(() => {
                 common.AlertFail("Something wrong: timeout");
             });
-        
+      
             if (! await HaveBalance(mnemonic, buy_coin, buy_amount)) 
             {
                 common.HideProgressDialog();

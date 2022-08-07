@@ -762,7 +762,10 @@ async function WaitSellTransaction(swapID)
         }
 
         if (txs.length <= 1)
-            return setTimeout(WaitSellTransaction, 1000*60*1, swapID) //seems not refunded yet
+        {
+            utils.SwapLog(`The buyer has not yet taken the coins. Need to wait 5 min and then check again.`, "s", swapID)
+            return setTimeout(WaitSellTransaction, 1000*60*5, swapID) //seems not refunded yet
+        }
         
         //Seems Got SELL TRANSACTION!
 

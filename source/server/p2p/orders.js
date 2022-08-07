@@ -197,7 +197,7 @@ exports.InitBuyOrder = async function(mnemonic, orderUID, sell_coin, seller_pubk
     
     g_Swaps[orderMnemonic] = swap.InitContext(buy_coin, orderMnemonic);
     
-    const addressBuyerBTC = tbtc_utils.GetAddress(mnemonic);
+    const addressBuyerBTC = sell_coin == "tbtc" ? tbtc_utils.GetAddress(mnemonic) : btc_utils.GetAddress(mnemonic);
 
     const keys = utils.genKeysDLEQ(g_Swaps[orderMnemonic].getSpentPair().priv); 
    

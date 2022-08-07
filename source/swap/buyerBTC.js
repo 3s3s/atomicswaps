@@ -390,7 +390,7 @@ exports.ProcessBuyOrder = async function(result, swapInfoBuyer, refundXMR)
 
         utils.SaveObjectToDB(g_Transactions[swapInfoBuyer.swapID], `swap_buy_${swapInfoBuyer.swapID}`)
 
-        utils.SwapLog(`First (${swapInfoBuyer.sell_coin}) transaction was sent. txid: ${txid}`, "b", swapInfoBuyer.swapID)
+        utils.SwapLog(`Got first (${swapInfoBuyer.sell_coin}) transaction signed by seller and broadcast it. txid: ${txid}`, "b", swapInfoBuyer.swapID)
         
         exports.WaitConfirmation(swapInfoBuyer.swapID)
 
@@ -453,6 +453,7 @@ exports.WaitConfirmation = async function (swapID)
         if (g_Transactions[swapID]["status"] && g_Transactions[swapID]["status"]*1 > 80)
         {
             utils.SwapLog(`Returned without send (over 80% was processed before - need to prevent a double spent)`, "b", swapID)
+            getCancel(swapID);
             return; //to prevent double spent
         }
 
@@ -694,6 +695,7 @@ async function getCancel (swapID)
     if (txid.length > 50)
         return EndSwap(swapID, `Sent Cancel transaction for BTC: ${txid}<br>***Swap complete***`); //Cancelation done!
 
+    utils.SwapLog(`Transaction (cancel) was not sent. Something wrong. Will try again after 5 min`, "b", swapID)
     setTimeout(getCancel, 1000*60*5, swapID)
 
 }
