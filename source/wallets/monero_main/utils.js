@@ -33,7 +33,7 @@ exports.Wallet = async function(params)
 
     let RPC = false;
     try {
-        RPC = require("../../private").RPC.xmr || false;
+        RPC = require("../../private").RPC.xmr[0] || false;
         if (!RPC) return null;
     }
     catch(e) {
@@ -68,12 +68,29 @@ exports.Wallet = async function(params)
 
             g_openWallets[utils.Hash160(walletName)] = {isOpen: true, isSynced: false};
 
-            const daemon = await monerojs.connectToDaemonRpc(RPC.host);
+            let isConnected = false;
+            let daemon = null;
+            for (let i=0; i<require("../../private").RPC.xmr.length; i++)
+            {
+                RPC = require("../../private").RPC.xmr[i]
+                daemon = await monerojs.connectToDaemonRpc(RPC.host);
+
+                isConnected = await daemon.isConnected()
+                if (!isConnected)
+                    continue;
+            }
+            if (!isConnected)
+            {
+                g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
+                log("Cancel xmr Wallet Message bacause daemon not connected...")
+                return ok(null);    
+            }
+            /*const daemon = await monerojs.connectToDaemonRpc(RPC.host);
             if (!await daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
                 log("Cancel xmr Wallet Message bacause daemon not connected...")
                 return ok(null);
-            }
+            }*/
 
             const height = await daemon.getHeight();   
             
@@ -231,7 +248,7 @@ exports.GetBalance = function(address, callback = null)
             return g_LastUpdated[address.address].data;
         }
 
-        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : {confirmed: 0}
+        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : {confirmed: 0, result: true}
 
         g_LastUpdated[address.address] = {time: Date.now(), data: data};
 

@@ -33,7 +33,7 @@ exports.Wallet = async function(params)
 
     let RPC = false;
     try {
-        RPC = require("../../private").RPC.txmr || false;
+        RPC = require("../../private").RPC.txmr[0] || false;
         if (!RPC) return null;
     }
     catch(e) {

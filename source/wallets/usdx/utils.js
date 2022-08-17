@@ -33,7 +33,7 @@ exports.Wallet = async function(params)
 
     let RPC = false;
     try {
-        RPC = require("../../private").RPC.usdx || false;
+        RPC = require("../../private").RPC.usdx[0] || false;
         if (!RPC) return null;
     }
     catch(e) {
@@ -237,7 +237,7 @@ exports.GetBalance = function(address, callback = null)
             return g_LastUpdated[address.address].data;
         }
 
-        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : {confirmed: 0}
+        const data = !!g_LastUpdated[address.address] && !!g_LastUpdated[address.address].data ? g_LastUpdated[address.address].data : {confirmed: 0, result: true}
 
         g_LastUpdated[address.address] = {time: Date.now(), data: data};
 

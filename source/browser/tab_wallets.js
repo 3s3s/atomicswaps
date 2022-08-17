@@ -704,11 +704,13 @@ exports.ShowBalances = async function(force = true)
     {
         $("#txt_balance_bitcointest").empty().append($("<span class='text-warning'>wait update...</span>"))
         tbtc.GetBalance(mnemonic, balance => {
+            balance.confirmed = (typeof balance.confirmed == 'undefined') ? 0 : balance.confirmed;
             $("#txt_balance_bitcointest").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
         })
         
         $("#txt_balance_monerotest").empty().append($("<span class='text-warning'>wait update...</span>"))
         txmr.GetBalance(addressTXMR, balance => {
+            balance.confirmed = (typeof balance.confirmed == 'undefined') ? 0 : balance.confirmed;
             $("#txt_balance_monerotest").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
         })
     }
@@ -716,17 +718,20 @@ exports.ShowBalances = async function(force = true)
     {
         $("#txt_balance_bitcoinmain").empty().append($("<span class='text-warning'>wait update...</span>"))
         btc.GetBalance(mnemonic, balance => {
-            $("#txt_balance_bitcoinmain").empty().text((balance.confirmed / 100000000).toFixed(8)*1.0);
+            balance.confirmed = (typeof balance.confirmed == 'undefined') ? 0 : balance.confirmed;
+            $("#txt_balance_bitcoinmain").empty().text((balance.confirmed*1 / 100000000).toFixed(8)*1.0);
         })
         
         $("#txt_balance_xmr").empty().append($("<span class='text-warning'>wait update...</span>"))
         xmr.GetBalance(addressXMR, balance => {
-            $("#txt_balance_xmr").empty().text((balance.confirmed / 1000000000000).toFixed(8)*1.0);
+            balance.confirmed = (typeof balance.confirmed == 'undefined') ? 0 : balance.confirmed;
+            $("#txt_balance_xmr").empty().text((balance.confirmed*1 / 1000000000000).toFixed(8)*1.0);
         })
 
         $("#txt_balance_usdx").empty().append($("<span class='text-warning'>wait update...</span>"))
         usdx.GetBalance(addressUSDX, balance => {
-            $("#txt_balance_usdx").empty().text((balance.confirmed / 100).toFixed(2)*1.0);
+            balance.confirmed = (typeof balance.confirmed == 'undefined') ? 0 : balance.confirmed;
+            $("#txt_balance_usdx").empty().text((balance.confirmed*1 / 100).toFixed(2)*1.0);
         })
 
     }
