@@ -26,7 +26,7 @@ exports.Electrum = function(params)
             const ret = await ecl.request(reqObject.request, reqObject.params);
 
             if (params.publicKey && params.serverKey)
-                ok( utils.ServerDH_Encrypt(JSON.stringify(ret), params.publicKey));
+                ok( utils.ServerDH_Encrypt(JSON.stringify(ret), params.publicKey, params.serverKey));
             else
                 ok( JSON.stringify(ret) ); 
         }catch(e){

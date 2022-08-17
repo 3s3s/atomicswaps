@@ -22,7 +22,7 @@ function log(message)
 let g_openWallets = {}
 exports.Wallet = async function(params)
 {
-    log("Handle Monero Wallet Message")
+    log("Handle xmr Wallet Message")
 
     if (monerojs.LibraryUtils.WORKER_DIST_PATH.indexOf("C:") == 0 && monerojs.LibraryUtils.WORKER_DIST_PATH.indexOf("file://") == -1)
         monerojs.LibraryUtils.WORKER_DIST_PATH = "file://"+monerojs.LibraryUtils.WORKER_DIST_PATH;
@@ -56,12 +56,12 @@ exports.Wallet = async function(params)
             {
                 if (!!g_openWallets[utils.Hash160(walletName)].isSynced && reqObject.request != "getBalance")
                 {
-                    log("Wait Monero Wallet ProcessMessage bacause wait old...")
+                    log("Wait xmr Wallet ProcessMessage bacause wait old...")
                     return setTimeout(ProcessMessage, 10*1000, walletName, reqObject, ok, RPC)
                 }
                 else
                 {
-                    log("Cancel Monero Wallet getBalance bacause wait syncing...")
+                    log("Cancel xmr Wallet getBalance bacause wait syncing...")
                     return ok(null)
                 }
             }
@@ -71,7 +71,7 @@ exports.Wallet = async function(params)
             const daemon = await monerojs.connectToDaemonRpc(RPC.host);
             if (!await daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
-                log("Cancel Monero Wallet Message bacause daemon not connected...")
+                log("Cancel xmr Wallet Message bacause daemon not connected...")
                 return ok(null);
             }
 
@@ -98,9 +98,9 @@ exports.Wallet = async function(params)
 
             if (! await viewOnlyWallet.isSynced())
             {
-                log("Start sync Monero wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                log("Start sync xmr wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
                 await viewOnlyWallet.sync(); 
-                log("End sync Monero wallet height="+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                log("End sync xmr wallet height="+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
             }
             g_openWallets[utils.Hash160(walletName)].isSynced = await viewOnlyWallet.isSynced();
 
@@ -170,7 +170,7 @@ exports.Wallet = async function(params)
             ret = JSON.stringify(ret);
 
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey, params.serverKey);
 
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
@@ -189,7 +189,7 @@ exports.Wallet = async function(params)
             let ret = JSON.stringify({result: false, message: e.message});
             
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey, params.serverKey);
 
             return ok(ret);
         }   

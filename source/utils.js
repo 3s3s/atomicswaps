@@ -132,7 +132,7 @@ exports.SwapLog = function(text, level, id, ctx)
   tab_orders.SwapLog(text, level, id, ctx);
 }
 
-exports.ServerDH_Encrypt = function(message, publicKey)
+exports.ServerDH_Encrypt = function(message, pubKeyClient, pubKeyServer)
 {
   if (typeof window !== 'undefined') return;
 
@@ -141,14 +141,14 @@ exports.ServerDH_Encrypt = function(message, publicKey)
   const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
-  diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
+  diffiehellman.setPublicKey(pubKeyServer, "hex")
   
-  const password = diffiehellman.computeSecret(Buffer.from(publicKey, "hex")).toString("hex");
+  const password = diffiehellman.computeSecret(Buffer.from(pubKeyClient, "hex")).toString("hex");
 
   return exports.Encrypt(message, password);  
 }
 
-exports.ServerDH_Decrypt = function(message, publicKey)
+exports.ServerDH_Decrypt = function(message, pubKeyClient, pubKeyServer)
 {
   if (typeof window !== 'undefined') return;
 
@@ -157,9 +157,9 @@ exports.ServerDH_Decrypt = function(message, publicKey)
   const diffiehellman = dh.createDiffieHellman(exports.Hash160(g_constants.clientDHkeys.G), "hex", Buffer.from("02", "hex"));
   
   diffiehellman.setPrivateKey(serverDHkeys.sec, "hex")
-  diffiehellman.setPublicKey(serverDHkeys.pub, "hex")
+  diffiehellman.setPublicKey(pubKeyServer, "hex")
   
-  const password = diffiehellman.computeSecret(Buffer.from(publicKey, "hex")).toString("hex");
+  const password = diffiehellman.computeSecret(Buffer.from(pubKeyClient, "hex")).toString("hex");
 
   return exports.Decrypt(message, password);  
 }

@@ -22,7 +22,7 @@ function log(message)
 let g_openWallets = {}
 exports.Wallet = async function(params)
 {
-    log("Handle Monero Wallet Message")
+    log("Handle txmr Wallet Message")
 
     if (monerojs.LibraryUtils.WORKER_DIST_PATH.indexOf("C:") == 0 && monerojs.LibraryUtils.WORKER_DIST_PATH.indexOf("file://") == -1)
         monerojs.LibraryUtils.WORKER_DIST_PATH = "file://"+monerojs.LibraryUtils.WORKER_DIST_PATH;
@@ -71,7 +71,7 @@ exports.Wallet = async function(params)
             const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
             if (!await daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
-                log("Cancel Monero Wallet Message bacause daemon not connected...")
+                log("Cancel txmr Wallet Message bacause daemon not connected...")
                 return ok(null);
             }
 
@@ -98,9 +98,9 @@ exports.Wallet = async function(params)
 
             if (! await viewOnlyWallet.isSynced())
             {
-                log("Start sync Monero wallet")
+                log("Start sync txmr wallet")
                 await viewOnlyWallet.sync(); 
-                log("End sync Monero wallet")
+                log("End sync txmr wallet")
             }
             g_openWallets[utils.Hash160(walletName)].isSynced = await viewOnlyWallet.isSynced();
 
@@ -108,7 +108,7 @@ exports.Wallet = async function(params)
             
             if (reqObject.request == "getBalance")
             {
-                log("Handle: getBalance")
+                log("Handle: getBalance (txmr)")
                 const outputsHex = await viewOnlyWallet.exportOutputs(true);
                 const balance = await viewOnlyWallet.getBalance();
                 
@@ -120,7 +120,7 @@ exports.Wallet = async function(params)
 
             if (reqObject.request == "importKeyImages")
             {
-                log("Handle: importKeyImages")
+                log("Handle: importKeyImages (txmr)")
 
                 let images = null
                 try {
@@ -170,7 +170,7 @@ exports.Wallet = async function(params)
             ret = JSON.stringify(ret);
 
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey, params.serverKey);
 
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
@@ -189,7 +189,7 @@ exports.Wallet = async function(params)
             let ret = JSON.stringify({result: false, message: e.message});
             
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey, params.serverKey);
 
             return ok(ret);
         }   

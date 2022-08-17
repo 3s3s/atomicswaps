@@ -1,5 +1,7 @@
 // @ts-nocheck
 "use strict";
+
+const g_constants = require("../constants")
 const BN = require('bn.js');
 const EC = require('elliptic').ec
 const EdDSA = require('elliptic').eddsa;
@@ -69,13 +71,13 @@ exports.parseParams = function(params)
         return null;
 
     //if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
-    if (params.serverKey && params.serverKey != dhKey.pub) return null;
+    if (params.serverKey && params.serverKey != g_constants.clientDHkeys.server_pub) return null;
 
     try {
         const request = params.publicKey && params.serverKey ? 
-            utils.ServerDH_Decrypt(params.request, params.publicKey) : 
+            utils.ServerDH_Decrypt(params.request, params.publicKey, params.serverKey) : 
             params.request;
-            
+
         return JSON.parse(request);
     }
     catch(e) {
