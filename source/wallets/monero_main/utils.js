@@ -76,8 +76,8 @@ exports.Wallet = async function(params)
                 daemon = await monerojs.connectToDaemonRpc(RPC.host);
 
                 isConnected = await daemon.isConnected()
-                if (!isConnected)
-                    continue;
+                if (isConnected)
+                    break;
             }
             if (!isConnected)
             {
@@ -115,7 +115,9 @@ exports.Wallet = async function(params)
 
             if (! await viewOnlyWallet.isSynced())
             {
-                log("Start sync xmr wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                const height = Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight())
+
+                log("Start sync xmr wallet start from "+height)
                 await viewOnlyWallet.sync(); 
                 log("End sync xmr wallet height="+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
             }
@@ -198,7 +200,11 @@ exports.Wallet = async function(params)
         }
         catch(e) {
             if (viewOnlyWallet)
+            {
+                //const height = Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight())
+                //await viewOnlyWallet.setSyncHeight(height-2)
                 await viewOnlyWallet.close(true);
+            }
 
             g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
             console.log(e);

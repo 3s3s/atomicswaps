@@ -68,12 +68,29 @@ exports.Wallet = async function(params)
 
             g_openWallets[utils.Hash160(walletName)] = {isOpen: true, isSynced: false};
 
-            const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
+            let isConnected = false;
+            let daemon = null;
+            for (let i=0; i<require("../../private").RPC.xmr.length; i++)
+            {
+                RPC = require("../../private").RPC.txmr[i]
+                daemon = await monerojs.connectToDaemonRpc(RPC.host);
+
+                isConnected = await daemon.isConnected()
+                if (isConnected)
+                    break;
+            }
+            if (!isConnected)
+            {
+                g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
+                log("Cancel txmr Wallet Message bacause daemon not connected...")
+                return ok(null);    
+            }
+            /*const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
             if (!await daemon.isConnected()) {
                 g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
                 log("Cancel txmr Wallet Message bacause daemon not connected...")
                 return ok(null);
-            }
+            }*/
 
             const height = await daemon.getHeight();   
             
