@@ -1,10 +1,18 @@
+
+const utils = require("./source/utils")
+
+const ret = utils.GenerateDH_keys("a;ljg@$BFB")
+
+console.log(ret);
+
+
 //const _sodium = require('libsodium-wrappers-sumo');
-const monero = require("./source/wallets/monero")
+/*const monero = require("./source/wallets/monero")
 const utils = require("./source/utils")
 const EC = require('elliptic').ec
 
 const multicoin = require("multicoinjs-lib");
-const bitcoin = require("bitcoinjs-lib")
+const bitcoin = require("bitcoinjs-lib")*/
 
 //const secp256k1 = new EC('secp256k1');//secp256k1.curve
 
@@ -17,10 +25,10 @@ const bitcoin = require("bitcoinjs-lib")
 
 //const B_M_CHECK = new BN("46316835694926478169428394003475163141307993866256225615783033603165251855960", 10)
 
-const BN = require('bn.js');
+/*const BN = require('bn.js');
 const EdDSA = require('elliptic').eddsa;
 const ed25519 = new EdDSA('ed25519');
-const _sodium = require('libsodium-wrappers-sumo');
+const _sodium = require('libsodium-wrappers-sumo');*/
 
 /*monero.initSodium.then(ok => {
     const privKeyHex = "6220f3affaa568f554ca850f9374e7112c09af219976bb779f4fd8f297294900"
@@ -35,7 +43,7 @@ const _sodium = require('libsodium-wrappers-sumo');
     console.log(pair.getPublicKey().toString("hex"))
 })*/
 
-(async() => {
+/*(async() => {
   await _sodium.ready;
   const sodium = _sodium;
   
@@ -49,7 +57,7 @@ const _sodium = require('libsodium-wrappers-sumo');
   console.log(tmp2)
   console.log(tmp3)
   console.log(tmp4)
-})()
+})()*/
 
 
 /*

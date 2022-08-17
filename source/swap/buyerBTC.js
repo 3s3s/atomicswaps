@@ -448,7 +448,7 @@ exports.WaitConfirmation = async function (swapID)
 
         setTimeout(WaitRefund, 1000, swapID)
 
-        setTimeout(getCancel, 1000*60*10, swapID)
+        setTimeout(getCancel, 1000*60*10, swapID) 
     
         if (g_Transactions[swapID]["status"] && g_Transactions[swapID]["status"]*1 > 80)
         {

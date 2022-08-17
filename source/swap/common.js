@@ -362,32 +362,40 @@ exports.CheckSpent = function(scriptpubkey, txHash, coin)
     })
 }
 
-exports.GetSignatureFromTX = function(txHash, coin)
+exports.GetSignatureFromTX = function(txHash, coin, multisign=true)
 {
     return new Promise(ok => {
         exports.GetTransaction(txHash, coin, ret => {
-            if (!ret.result || ret.tx.outs.length != 1 || ret.tx.ins.length != 1 || !ret.tx.ins[0].script) 
-            {
-                console.log(ret)
+            try {
+                if (!ret.result || ret.tx.outs.length != 1 || ret.tx.ins.length != 1 || !ret.tx.ins[0].script) 
+                {
+                    console.log(ret)
+                    return ok(null)
+                }
+
+                const asm = ret.tx.ins[0].script.toString("hex");
+                /*const length = ret.tx.ins[0].script[1]
+                const sig = bitcoin.script.signature.decode(Buffer.from(asm.substring(2, 2+length*2), "hex")).signature
+                return ok({sigSeller: sig, sigBuyer: sig})*/
+                
+                const length1 = multisign ? ret.tx.ins[0].script[1] : ret.tx.ins[0].script[0]
+                const length2 = multisign ? ret.tx.ins[0].script[length1+2] : 0
+
+                const sig1 = multisign ? 
+                    Buffer.from(asm.substring(4, 4+length1*2), "hex") : Buffer.from(asm.substring(2, 2+length1*2), "hex")
+                const sig2 = multisign ?
+                    Buffer.from(asm.substring(4+length1*2+2, 4+length1*2+2+length2*2), "hex") : "";
+
+                const sigSeller = multisign ? bitcoin.script.signature.decode(sig1).signature : "";
+                const sigBuyer = multisign ? bitcoin.script.signature.decode(sig2).signature : bitcoin.script.signature.decode(sig1).signature;
+                
+
+                return ok({sigSeller: sigSeller, sigBuyer: sigBuyer})
+            }
+            catch(e) {
+                console.log(e)
                 return ok(null)
             }
-
-            const asm = ret.tx.ins[0].script.toString("hex");
-            /*const length = ret.tx.ins[0].script[1]
-            const sig = bitcoin.script.signature.decode(Buffer.from(asm.substring(2, 2+length*2), "hex")).signature
-            return ok({sigSeller: sig, sigBuyer: sig})*/
-            
-            const length1 = ret.tx.ins[0].script[1]
-            const length2 = ret.tx.ins[0].script[length1+2]
-
-            const sig1 = Buffer.from(asm.substring(4, 4+length1*2), "hex")
-            const sig2 = Buffer.from(asm.substring(4+length1*2+2, 4+length1*2+2+length2*2), "hex")
-
-            const sigSeller = bitcoin.script.signature.decode(sig1).signature
-            const sigBuyer = bitcoin.script.signature.decode(sig2).signature
-            
-
-            return ok({sigSeller: sigSeller, sigBuyer: sigBuyer})
         })
     })
 }

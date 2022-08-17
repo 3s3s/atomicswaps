@@ -176,7 +176,7 @@ exports.Wallet = async function(params)
             ret = JSON.stringify(ret);
 
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
 
             if (viewOnlyWallet)
                 await viewOnlyWallet.close(true);
@@ -195,7 +195,7 @@ exports.Wallet = async function(params)
             let ret = JSON.stringify({result: false, message: e.message});
             
             if (params.publicKey && params.serverKey)
-                ret = utils.ServerDH_Encrypt(ret);
+                ret = utils.ServerDH_Encrypt(ret, params.publicKey);
 
             return ok(ret);
         }   

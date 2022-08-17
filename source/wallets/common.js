@@ -68,11 +68,14 @@ exports.parseParams = function(params)
     if (!dhKey && (params.publicKey || params.serverKey))
         return null;
 
-    if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
+    //if (params.publicKey && params.publicKey != dhKey.client_pub) return null;
     if (params.serverKey && params.serverKey != dhKey.pub) return null;
 
     try {
-        const request = params.publicKey && params.serverKey ? utils.ServerDH_Decrypt(params.request) : params.request;
+        const request = params.publicKey && params.serverKey ? 
+            utils.ServerDH_Decrypt(params.request, params.publicKey) : 
+            params.request;
+            
         return JSON.parse(request);
     }
     catch(e) {

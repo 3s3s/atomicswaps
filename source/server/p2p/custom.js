@@ -4,9 +4,11 @@
 const utils = require("../../utils")
 const orders = require("./orders.js")
 
-exports.SendMessage = p2p.SendMessage;
+const P2P = typeof p2p !== 'undefined' ? p2p : {on: function(){}, SendMessage: null}
 
-p2p.on("electrum", async params => 
+exports.SendMessage = P2P.SendMessage;
+
+P2P.on("electrum", async params => 
 {
     let answer = null;
     if (params["coin"] == "tbtc")
@@ -14,10 +16,10 @@ p2p.on("electrum", async params =>
     if (params["coin"] == "btc")
         answer = await require("../../wallets/bitcoin_main/utils").Electrum(params)
 
-    return p2p.ProcessAnswer(params, answer)
+    return P2P.ProcessAnswer(params, answer)
 })
 
-p2p.on("monerod", async params => 
+P2P.on("monerod", async params => 
 {
     let answer = null;
     if (params["coin"] == "txmr")
@@ -25,19 +27,19 @@ p2p.on("monerod", async params =>
     if (params["coin"] == "xmr")
         answer = await require("../../wallets/monero_main/utils").Wallet(params)
 
-    return p2p.ProcessAnswer(params, answer)
+    return P2P.ProcessAnswer(params, answer)
 })
 
-p2p.on("usdxd", async params => 
+P2P.on("usdxd", async params => 
 {
     let answer = null;
     if (params["coin"] == "usdx")
         answer = await require("../../wallets/usdx/utils").Wallet(params)
 
-    return p2p.ProcessAnswer(params, answer)
+    return P2P.ProcessAnswer(params, answer)
 })
 
-p2p.on("new_order", async params => 
+P2P.on("new_order", async params => 
 {
     let answer = null;
     if (params["coin"] == "tbtc")
@@ -51,46 +53,46 @@ p2p.on("new_order", async params =>
     if (params["coin"] == "usdx")
         answer = await require("../../wallets/usdx/orders").HandleCreateOrder(params)
 
-    return p2p.ProcessAnswer(params, answer)
+    return P2P.ProcessAnswer(params, answer)
 })
 
-p2p.on("listOrders", async params => 
+P2P.on("listOrders", async params => 
 {
-    return p2p.ProcessAnswer(params, await utils.HandleListOrders(params))
+    return P2P.ProcessAnswer(params, await utils.HandleListOrders(params))
 })
 
-p2p.on("InviteBuyer", async params => 
+P2P.on("InviteBuyer", async params => 
 {
-    return p2p.ProcessAnswer(params, await utils.HandleInviteBuyer(params))
+    return P2P.ProcessAnswer(params, await utils.HandleInviteBuyer(params))
 })
 
-p2p.on("deleteOrder", async params => 
+P2P.on("deleteOrder", async params => 
 {
-    return p2p.ProcessAnswer(params, await utils.DeleteOrderFromDB(params))
+    return P2P.ProcessAnswer(params, await utils.DeleteOrderFromDB(params))
 })
 
-p2p.on("refreshOrder", async params => 
+P2P.on("refreshOrder", async params => 
 {
-    return p2p.ProcessAnswer(params, await utils.RefreshOrderInDB(params))
+    return P2P.ProcessAnswer(params, await utils.RefreshOrderInDB(params))
 })
 
-p2p.on("InitBuyOrder", async params => 
+P2P.on("InitBuyOrder", async params => 
 {
-    return p2p.ProcessAnswer(params, await utils.InitBuyOrder(params))
+    return P2P.ProcessAnswer(params, await utils.InitBuyOrder(params))
 })
 
-p2p.on("getAdaptorSignatureFromBuyer", params => 
+P2P.on("getAdaptorSignatureFromBuyer", params => 
 {
-    return p2p.ProcessAnswer(params, orders.getAdaptorSignatureFromBuyer(params))
+    return P2P.ProcessAnswer(params, orders.getAdaptorSignatureFromBuyer(params))
 })
 
 
-p2p.on("getSwapTransactionFromBuyer", async params => 
+P2P.on("getSwapTransactionFromBuyer", async params => 
 {
-    return p2p.ProcessAnswer(params, await orders.getSwapTransactionFromBuyer(params))
+    return P2P.ProcessAnswer(params, await orders.getSwapTransactionFromBuyer(params))
 })
 
-p2p.on("answer", params => 
+P2P.on("answer", params => 
 {
     if (params.values)
     {
@@ -98,5 +100,5 @@ p2p.on("answer", params =>
             require("../../utils").ClientDH_Decrypt(params.values) : params.values;
     }
     
-    return p2p.ProcessAnswer(params)
+    return P2P.ProcessAnswer(params)
 })

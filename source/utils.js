@@ -5,7 +5,6 @@ const g_crypto = require('crypto');
 const sodium = require('sodium-universal')
 const dh = require('diffie-hellman/browser')
 const g_constants = require("./constants")
-const monero = require("./wallets/monero")
 
 const BN = require('bn.js');
 const elliptic = require('elliptic');
@@ -17,7 +16,6 @@ const secp256k1 = new EC('secp256k1');
 const customP2P = require("./server/p2p/custom")
 const p2p_orders = require("./server/p2p/orders")
 const tab_orders = require("./browser/tab_orders")
-const tbtc_utils = require("./wallets/bitcoin_test/utils")
 const sellerBTC = require("./swap/sellerBTC")
 
 let g_PASSWORD = "123";
@@ -129,7 +127,7 @@ exports.SwapLog = function(text, level, id, ctx)
   tab_orders.SwapLog(text, level, id, ctx);
 }
 
-exports.ServerDH_Encrypt = function(message)
+exports.ServerDH_Encrypt = function(message, publicKey)
 {
   if (typeof window !== 'undefined') return;
 
@@ -145,7 +143,7 @@ exports.ServerDH_Encrypt = function(message)
   return exports.Encrypt(message, password);  
 }
 
-exports.ServerDH_Decrypt = function(message)
+exports.ServerDH_Decrypt = function(message, publicKey)
 {
   if (typeof window !== 'undefined') return;
 
@@ -163,15 +161,15 @@ exports.ServerDH_Decrypt = function(message)
 
 exports.GenerateDH_keys = function(seed)
 {
-  const diffiehellman1 = crypto.createDiffieHellman(utils.Hash160(seed), "hex", Buffer.from("02", "hex"));
-  const diffiehellman2 = crypto.createDiffieHellman(utils.Hash160(seed), "hex", Buffer.from("02", "hex"))
+  const diffiehellman1 = dh.createDiffieHellman(exports.Hash160(seed), "hex", Buffer.from("02", "hex"));
+  const diffiehellman2 = dh.createDiffieHellman(exports.Hash160(seed), "hex", Buffer.from("02", "hex"))
     
   // Generating keys
   diffiehellman1.generateKeys("hex");
   diffiehellman2.generateKeys("hex");
 
-  const keys1 = {pub: diffiehellmangrp1.getPublicKey("hex"), priv: diffiehellmangrp1.getPrivateKey("hex")}
-  const keys2 = {pub: diffiehellmangrp2.getPublicKey("hex"), priv: diffiehellmangrp2.getPrivateKey("hex"), prime: diffiehellmangrp1.getPrime("hex"), gen: diffiehellmangrp1.getGenerator("hex")}
+  const keys1 = {pub: diffiehellman1.getPublicKey("hex"), priv: diffiehellman1.getPrivateKey("hex")}
+  const keys2 = {pub: diffiehellman2.getPublicKey("hex"), priv: diffiehellman2.getPrivateKey("hex"), prime: diffiehellman1.getPrime("hex"), gen: diffiehellman1.getGenerator("hex")}
 
   return {keys1: keys1, keys2: keys2}
 }
