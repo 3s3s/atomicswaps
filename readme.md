@@ -43,7 +43,7 @@ Instead of running the server, you can compile the code for browser:
 npm run compile
 ```
 
-Or yuo can compile the code for the browser with a source map (for debug)
+Or you can compile the code for the browser with a source map (for debug)
 
 ```
 npm run compile_debug
@@ -63,3 +63,5 @@ To stop the daemon jus type:
 ```
 npm run daemon_stop
 ```
+
+Life version: https://3s3s.github.io/atomicswaps/browser/html/popup.html
