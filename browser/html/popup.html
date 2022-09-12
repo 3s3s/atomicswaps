@@ -494,11 +494,48 @@
       </div>
     </div>
 
-    <script src="../js/jquery-3.4.1.min.js"></script>
-    <script src="../js/bootstrap.bundle.min.js"></script>
-    <script src="../js/workers.js"></script>
-    <script src="../js/main.js"></script>
+    <!-- Modal Progress -->
+    <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="staticBackdropLabel">Please wait for load the page...</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="progress">
+              <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script id="script_jquery" src="../js/jquery-3.4.1.min.js"></script>
+    <script id="script_bootstrap" src="../js/bootstrap.bundle.min.js"></script>
+    <script id="script_workers" src="../js/workers.js"></script>
+    <script id="script_main" src="../js/main.js"></script>
+
     <script>
+      let g_progress = 0;
+
+      const script_jquery = document.querySelector('#script_jquery');
+      script_jquery.addEventListener('load', () => {
+        g_progress++; 
+      });
+      const script_bootstrap = document.querySelector('#script_bootstrap');
+      script_bootstrap.addEventListener('load', () => {
+        g_progress++; 
+      });
+      const script_workers = document.querySelector('#script_workers');
+      script_workers.addEventListener('load', () => {
+        g_progress++; 
+      });
+      const script_main = document.querySelector('#script_main');
+      script_main.addEventListener('load', () => {
+        g_progress++; 
+      });
+  
       $('#sell_amount').on('keypress', e => {
           if (e.keyCode === 13) {
             $('#createorder_sell_ok').trigger('click');

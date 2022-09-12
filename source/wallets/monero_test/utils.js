@@ -70,7 +70,7 @@ exports.Wallet = async function(params)
 
             let isConnected = false;
             let daemon = null;
-            for (let i=0; i<require("../../private").RPC.xmr.length; i++)
+            for (let i=0; i<require("../../private").RPC.txmr.length; i++)
             {
                 RPC = require("../../private").RPC.txmr[i]
                 daemon = await monerojs.connectToDaemonRpc(RPC.host);
