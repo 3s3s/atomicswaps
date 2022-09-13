@@ -82,7 +82,7 @@ exports.Wallet = async function(params)
             if (!isConnected)
             {
                 g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
-                log("Cancel txmr Wallet Message bacause daemon not connected...")
+                log(`Cancel txmr Wallet Message bacause daemon ${RPC.host} not connected...`)
                 return ok(null);    
             }
             /*const daemon = await monerojs.connectToDaemonRpc(RPC.host, RPC.user, RPC.password);
