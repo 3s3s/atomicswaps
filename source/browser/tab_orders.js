@@ -69,7 +69,7 @@ async function UpdateTable(currentSavedOrders)
 
         const seller_pubkey = currentSavedOrders[key].seller_pubkey;
 
-        const c_buy_fixed = (buy_coin == "txmr" || buy_coin == "xmr") ? 8 : 2;
+        const c_buy_fixed = (buy_coin == "txmr" || buy_coin == "xmr" || buy_coin == "btc" || buy_coin == "tbtc") ? 8 : 2;
 
         const td1 = $(`<td>${seller_pubkey}</td>`)
         const td2 = $(`<td>${(sell_amount / 100000000).toFixed(8)} ${sell_coin}</td>`)
