@@ -107,7 +107,7 @@ exports.Wallet = async function(params)
                     password: "supersecretpassword123",
                     primaryAddress: reqObject.params[0],
                     privateViewKey: reqObject.params[1],
-                    restoreHeight: height - 1000,
+                    restoreHeight: 1000000,
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 });
 
