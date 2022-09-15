@@ -107,7 +107,7 @@ exports.Wallet = async function(params)
                     password: "supersecretpassword123",
                     primaryAddress: reqObject.params[0],
                     privateViewKey: reqObject.params[1],
-                    restoreHeight: 1000000,
+                    restoreHeight: height-100000,
                     server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                 });
 
@@ -117,9 +117,20 @@ exports.Wallet = async function(params)
             {
                 const syncHeight = Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight());
                 //if (syncHeight >)
-                log("Start sync txmr wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                log("Start sync txmr wallet "+walletName+" start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                const listener = new monerojs.MoneroWalletListener(viewOnlyWallet);
+
+                listener["_done"] = 0.01;
+                listener.onSyncProgress = function(height, startHeight, endHeight, percentDone, message)
+                {
+                    if (percentDone - this["_done"] > 0.02)
+                    {
+                        console.log(percentDone);
+                        this["_done"] = percentDone;
+                    }
+                }
                 try {
-                    await viewOnlyWallet.sync(); 
+                    await viewOnlyWallet.sync(listener); 
                 }
                 catch(e) {
                     if (viewOnlyWallet)
@@ -161,6 +172,7 @@ exports.Wallet = async function(params)
                 const balance = await viewOnlyWallet.getBalance();
                 
                 ret = {confirmed: balance.toJSValue(), outputsHex: outputsHex, address: reqObject.params[0]};
+                log("txmr: getBalance return: "+ret.confirmed)
             }
 
             if (reqObject.request == "broadcast")
