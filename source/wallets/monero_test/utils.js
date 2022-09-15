@@ -115,9 +115,40 @@ exports.Wallet = async function(params)
 
             if (! await viewOnlyWallet.isSynced())
             {
-                log("Start sync txmr wallet")
-                await viewOnlyWallet.sync(); 
-                log("End sync txmr wallet")
+                const syncHeight = Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight());
+                //if (syncHeight >)
+                log("Start sync txmr wallet start from "+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
+                try {
+                    await viewOnlyWallet.sync(); 
+                }
+                catch(e) {
+                    if (viewOnlyWallet)
+                        await viewOnlyWallet.close(false);
+
+                    const walletNamePath = walletName; 
+                    fs.unlinkSync(walletNamePath);
+                    fs.unlinkSync(walletNamePath+".address.txt");
+                    fs.unlinkSync(walletNamePath+".keys");
+                    
+
+                    console.log(e)
+                    const viewOnlyWallet2 = await monerojs.createWalletFull({
+                        path: walletName,
+                        networkType: "stagenet",
+                        password: "supersecretpassword123",
+                        primaryAddress: reqObject.params[0],
+                        privateViewKey: reqObject.params[1],
+                        restoreHeight: 1000000,
+                        server: {uri: RPC.host, username: RPC.user, password: RPC.password}
+                    });
+
+                    if (viewOnlyWallet2)
+                        await viewOnlyWallet2.close(false);
+
+                    g_openWallets[utils.Hash160(walletName)] = {isOpen: false};
+                    return ok(null)
+                }
+                log("End sync txmr wallet height="+Math.max(await viewOnlyWallet.getHeight(), await viewOnlyWallet.getSyncHeight()))
             }
             g_openWallets[utils.Hash160(walletName)].isSynced = await viewOnlyWallet.isSynced();
 
