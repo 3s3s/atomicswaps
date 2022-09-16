@@ -149,7 +149,7 @@ exports.Wallet = async function(params)
                         password: "supersecretpassword123",
                         primaryAddress: reqObject.params[0],
                         privateViewKey: reqObject.params[1],
-                        restoreHeight: 1000000,
+                        restoreHeight: 1100000,
                         server: {uri: RPC.host, username: RPC.user, password: RPC.password}
                     });
 
@@ -345,6 +345,7 @@ exports.SendMoney = async function(address, address_to, amount)
     };
     */
     console.log(`will try send ${amount} tXMR from (${address.address}) to (${address_to})`)
+    let rawTX = null;
     try
     {
         const balance = await exports.GetBalance(address);
@@ -357,6 +358,7 @@ exports.SendMoney = async function(address, address_to, amount)
         if (!ret.result)
             return ret;
 
+        rawTX = ret.raw;
         return await exports.broadcast(null, ret.raw, address)
         //ok({result: true, txid: txid[0]});
 
@@ -369,7 +371,7 @@ exports.SendMoney = async function(address, address_to, amount)
 
         utils.SwapLog(e.message, "e")
 
-        return {result: false, message: e.message, code: 2}    
+        return {result: false, message: e.message + (rawTX == null ? "" : "; txHEX="+rawTX), code: 2}    
     }
 
 }
